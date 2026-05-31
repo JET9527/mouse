@@ -1,0 +1,119 @@
+@import './variables.scss';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  color: $text-primary;
+  background-color: $bg-primary;
+}
+
+body {
+  overflow: hidden;
+}
+
+// Scrollbar
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: $bg-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $border-light;
+  border-radius: 3px;
+
+  &:hover {
+    background: $accent-blue;
+  }
+}
+
+// Common button styles
+.gaming-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  height: $btn-height-md;
+  background: linear-gradient(180deg, rgba(0,212,255,0.15) 0%, rgba(0,212,255,0.05) 100%);
+  border: 1px solid $accent-blue;
+  border-radius: $radius-sm;
+  color: $accent-blue;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: linear-gradient(180deg, rgba(0,212,255,0.3) 0%, rgba(0,212,255,0.1) 100%);
+    box-shadow: $glow-blue;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  &.active {
+    background: linear-gradient(180deg, rgba(0,212,255,0.4) 0%, rgba(0,212,255,0.2) 100%);
+    box-shadow: $glow-blue;
+  }
+
+  &.btn-sm {
+    height: $btn-height-sm;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  &.btn-lg {
+    height: $btn-height-lg;
+    padding: 0 28px;
+    font-size: 16px;
+  }
+
+  &.btn-danger {
+    border-color: $danger-color;
+    color: $danger-color;
+    background: linear-gradient(180deg, rgba(255,71,87,0.15) 0%, rgba(255,71,87,0.05) 100%);
+  }
+
+  &.btn-success {
+    border-color: $success-color;
+    color: $success-color;
+    background: linear-gradient(180deg, rgba(46,213,115,0.15) 0%, rgba(46,213,115,0.05) 100%);
+  }
+}
+
+// Panel container
+.gaming-panel {
+  background: $bg-card;
+  border: 1px solid $border-color;
+  border-radius: $radius-md;
+  padding: 16px;
+}
+
+// Input overrides
+input[type="number"],
+input[type="text"],
+select {
+  background: $bg-secondary;
+  border: 1px solid $border-color;
+  border-radius: $radius-sm;
+  color: $text-primary;
+  padding: 6px 10px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.3s;
+
+  &:focus {
+    border-color: $accent-blue;
+  }
+}
