@@ -20,6 +20,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [color: RGBColor]
+  'release': [color: RGBColor]
 }>()
 
 const trackRef = ref<HTMLElement | null>(null)
@@ -48,7 +49,8 @@ const sliderValue = computed(() => {
   hue = Math.round(hue * 60)
   if (hue < 0) hue += 360
   
-  return (hue / 360) * 100
+  const pos = (hue / 360) * 100
+  return pos
 })
 
 // 当前 RGB 字符串（用于预览）
@@ -120,7 +122,7 @@ function handleMouseDown(e: MouseEvent) {
     document.removeEventListener('mousemove', onMouseMove)
     document.removeEventListener('mouseup', onMouseUp)
     const c = props.modelValue
-    console.log(`[ColorSliderBar] 选中颜色: RGB(${c.r}, ${c.g}, ${c.b})  #${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`)
+    emit('release', c)
   }
 
   document.addEventListener('mousemove', onMouseMove)

@@ -2,13 +2,13 @@
 
 // 灯效模式 (协议定义)
 export enum LightingEffect {
-  OFF = 0x00,
+  RAINBOW = 0x00,
   SOLID = 0x01,
   FLOWING = 0x02,
   DPI_BREATHING = 0x03,
   CYCLE_BREATHING = 0x04,
   GRADIENT = 0x05,
-  RAINBOW = 0x06,
+  OFF = 0x06,
 }
 
 // 预设颜色 (协议: 0-7 单色, 8 随机多彩)
@@ -47,8 +47,8 @@ export interface LightingConfig {
   magic: number
 }
 
-// LED 数量 (协议默认 N=6)
-export const LED_COUNT = 6
+// LED 数量 (协议默认 N=8)
+export const LED_COUNT = 8
 
 export interface ZoneConfig {
   zoneId: number

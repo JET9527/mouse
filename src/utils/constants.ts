@@ -3,17 +3,15 @@
 import type { MouseButton } from '../types/keyMapping'
 import { ProfileLayer } from '../types/keyMapping'
 
-// 9 mouse buttons definition
+// 6 mouse buttons definition
+// 协议ID: 0x00-左键, 0x01-右键, 0x02-中键, 0x03-后退, 0x04-前进, 0x05-DPI
 export const MOUSE_BUTTONS: MouseButton[] = [
   { id: 1, label: '左键', side: 'left' },
-  { id: 2, label: '右键', side: 'left' },
-  { id: 3, label: '中键', side: 'left' },
-  { id: 4, label: '前进', side: 'left' },
-  { id: 5, label: '后退', side: 'right' },
-  { id: 6, label: 'DPI+', side: 'right' },
-  { id: 7, label: 'DPI-', side: 'right' },
-  { id: 8, label: '老按键', side: 'right' },
-  { id: 9, label: '火力键', side: 'right' },
+  { id: 2, label: '右键', side: 'right' },
+  { id: 3, label: '中键', side: 'right' },
+  { id: 4, label: '后退键', side: 'left' },
+  { id: 5, label: '前进键', side: 'left' },
+  { id: 6, label: 'DPI键', side: 'right' },
 ]
 
 // Profile layers (4 profiles: 默认模式, 办公模式, 游戏模式1, 游戏模式2)
@@ -64,5 +62,5 @@ export const CONFIG_VERSION = '1.0.0'
 export const MAPPING_CONSTRAINTS = {
   MIN_LEFT_BUTTON: 1,
   LEFT_BUTTON_IDS: [1],
-  TOTAL_BUTTONS: 9,
+  TOTAL_BUTTONS: 6,
 }

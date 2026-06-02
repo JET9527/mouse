@@ -112,10 +112,15 @@ export function useWebHID() {
       selectedDevice.addEventListener('inputreport', (event) => {
         const rawData = new Uint8Array(event.data.buffer)
         
+        const rawHex = Array.from(rawData).map(b => b.toString(16).padStart(2, '0')).join(' ')
+        console.log(`[useWebHID] inputreport reportId=${event.reportId} raw=[${rawHex}]`)
+        
         let data = rawData
         if (event.reportId === 0 && rawData.length > 0) {
           if (rawData[0] === 0x00 && rawData.length > 1) {
             data = rawData.slice(1)
+            const dataHex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ')
+            console.log(`[useWebHID] 去除前导0x00后 data=[${dataHex}]`)
           }
         }
         

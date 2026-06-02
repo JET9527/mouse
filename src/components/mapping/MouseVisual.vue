@@ -61,15 +61,12 @@ import { MOUSE_BUTTONS } from '@/utils/constants'
 
 function getMarkerStyle(buttonId: number) {
   const positions: Record<number, { top: string; left: string }> = {
-    1: { top: '35%', left: '35%' },
-    2: { top: '35%', left: '62%' },
-    3: { top: '50%', left: '48%' },
-    4: { top: '42%', left: '8%' },
-    5: { top: '42%', right: '8%' },
-    6: { top: '28%', left: '48%' },
-    7: { top: '62%', left: '48%' },
-    8: { top: '55%', right: '5%' },
-    9: { top: '72%', left: '48%' },
+    1: { top: '28%', left: '28%' },
+    2: { top: '28%', left: '68%' },
+    3: { top: '35%', left: '48%' },
+    4: { top: '42%', left: '5%' },
+    5: { top: '55%', left: '5%' },
+    6: { top: '58%', left: '48%' },
   }
   return positions[buttonId] || { top: '50%', left: '50%' }
 }

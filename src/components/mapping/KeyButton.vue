@@ -2,14 +2,15 @@
   <div class="key-button" @click="$emit('click')">
     <div class="key-button-id">{{ button.id }}</div>
     <div class="key-button-content">
-      <div class="key-button-label">{{ button.label }}</div>
-      <div class="key-button-mapping">{{ mapping?.target?.label || '未设置' }}</div>
+      <div class="key-button-mapping">{{ (mapping?.target as any)?.label || '未设置' }}</div>
+      <div class="key-button-sub" v-if="mapping">{{ getSubLabel(mapping) }}</div>
     </div>
     <div class="key-button-arrow">›</div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
 import type { KeyMapping } from '@/types/keyMapping'
 
@@ -21,6 +22,22 @@ defineProps<{
 defineEmits<{
   click: []
 }>()
+
+function getSubLabel(mapping: KeyMapping): string {
+  const label = (mapping.target as any)?.label || ''
+  switch (mapping.type) {
+    case KeyType.MOUSE_FUNC:
+      return '鼠标' + label
+    case KeyType.KEY:
+      return '按键' + label
+    case KeyType.MACRO:
+      return '宏录制' + label
+    case KeyType.COMBO:
+      return '组合' + label
+    default:
+      return ''
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -73,9 +90,15 @@ defineEmits<{
 }
 
 .key-button-mapping {
-  font-size: 12px;
-  color: $accent-cyan;
-  margin-top: 2px;
+  font-size: 14px;
+  color: $text-primary;
+  font-weight: 600;
+}
+
+.key-button-sub {
+  font-size: 11px;
+  color: #2ed573;
+  margin-top: 1px;
 }
 
 .key-button-arrow {

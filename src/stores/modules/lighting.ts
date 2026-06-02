@@ -1,14 +1,24 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { RGBColor } from '@/types/lighting'
-import { LightingEffect } from '@/types/lighting'
+import { LightingEffect, FlowDirection } from '@/types/lighting'
 
 export const useLightingStore = defineStore('lighting', () => {
   const config = ref({
     effect: LightingEffect.SOLID,
-    brightness: 80,
-    speed: 50,
-    colors: [{ r: 0, g: 212, b: 255 }] as RGBColor[],
+    brightness: 3,
+    speed: 5,
+    colors: [
+      { r: 0, g: 212, b: 255 },
+      { r: 255, g: 0, b: 0 },
+      { r: 0, g: 255, b: 0 },
+      { r: 0, g: 0, b: 255 },
+      { r: 255, g: 255, b: 0 },
+      { r: 255, g: 0, b: 255 },
+      { r: 0, g: 255, b: 255 },
+      { r: 255, g: 128, b: 0 },
+    ] as RGBColor[],
+    direction: FlowDirection.FORWARD,
   })
 
   function setEffect(effect: LightingEffect) {
@@ -16,11 +26,11 @@ export const useLightingStore = defineStore('lighting', () => {
   }
 
   function setBrightness(brightness: number) {
-    config.value.brightness = Math.max(0, Math.min(100, brightness))
+    config.value.brightness = Math.max(0, Math.min(5, Math.round(brightness)))
   }
 
   function setSpeed(speed: number) {
-    config.value.speed = Math.max(0, Math.min(100, speed))
+    config.value.speed = Math.max(0, Math.min(9, Math.round(speed)))
   }
 
   function setColors(colors: RGBColor[]) {
@@ -35,6 +45,10 @@ export const useLightingStore = defineStore('lighting', () => {
     }
   }
 
+  function setDirection(direction: FlowDirection) {
+    config.value.direction = direction
+  }
+
   return {
     config,
     setEffect,
@@ -42,5 +56,6 @@ export const useLightingStore = defineStore('lighting', () => {
     setSpeed,
     setColors,
     setColor,
+    setDirection,
   }
 })

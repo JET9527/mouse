@@ -4,7 +4,7 @@
       v-for="btn in buttons"
       :key="btn.id"
       :button="btn"
-      :mapping="mapping"
+      :mapping="mapping(btn.id)"
       @click="$emit('select', btn.id)"
     />
   </div>

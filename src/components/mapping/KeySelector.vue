@@ -15,11 +15,11 @@
 
       <!-- Key type tabs -->
       <el-tabs v-model="activeType" class="type-tabs">
-        <!-- Basic keys -->
-        <el-tab-pane label="基本键" name="basic">
+        <!-- Mouse function keys -->
+        <el-tab-pane label="鼠标功能" name="mouseFunc">
           <div class="key-grid">
             <button
-              v-for="key in basicKeys"
+              v-for="key in mouseFuncKeys"
               :key="key.code"
               class="key-item"
               :class="{ selected: selectedKey?.code === key.code }"
@@ -31,10 +31,10 @@
         </el-tab-pane>
 
         <!-- Extended keys -->
-        <el-tab-pane label="扩展键" name="extended">
+        <el-tab-pane label="按键定义" name="keyDef">
           <div class="key-grid">
             <button
-              v-for="key in extendedKeys"
+              v-for="key in keyDefKeys"
               :key="key.code"
               class="key-item"
               :class="{ selected: selectedKey?.code === key.code }"
@@ -45,11 +45,11 @@
           </div>
         </el-tab-pane>
 
-        <!-- Media keys -->
-        <el-tab-pane label="多媒体" name="media">
+        <!-- Macro keys -->
+        <el-tab-pane label="宏录制" name="macro">
           <div class="key-grid">
             <button
-              v-for="key in mediaKeys"
+              v-for="key in macroKeys"
               :key="key.code"
               class="key-item"
               :class="{ selected: selectedKey?.code === key.code }"
@@ -74,6 +74,7 @@
             </button>
           </div>
         </el-tab-pane>
+
       </el-tabs>
 
       <!-- Selected key preview -->
@@ -94,7 +95,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { KeyType } from '@/types/keyMapping'
+import { KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
 
 interface KeyOption {
@@ -114,7 +115,7 @@ const emit = defineEmits<{
 }>()
 
 const visible = ref(props.modelValue)
-const activeType = ref('basic')
+const activeType = ref('mouseFunc')
 const selectedKey = ref<KeyOption | null>(null)
 
 watch(() => props.modelValue, (val) => {
@@ -124,51 +125,60 @@ watch(() => props.modelValue, (val) => {
 
 watch(visible, (val) => emit('update:modelValue', val))
 
-const basicKeys: KeyOption[] = [
-  { code: 1, label: '左键', type: 'basic' },
-  { code: 2, label: '右键', type: 'basic' },
-  { code: 3, label: '中键', type: 'basic' },
-  { code: 4, label: '前进', type: 'basic' },
-  { code: 5, label: '后退', type: 'basic' },
-  { code: 0, label: '禁用', type: 'disabled' },
+const keyDefKeys: KeyOption[] = [
+  { code: 10, label: 'F1', type: KeyType.KEY },
+  { code: 11, label: 'F2', type: KeyType.KEY },
+  { code: 12, label: 'F3', type: KeyType.KEY },
+  { code: 13, label: 'F4', type: KeyType.KEY },
+  { code: 14, label: 'F5', type: KeyType.KEY },
+  { code: 15, label: 'F6', type: KeyType.KEY },
+  { code: 16, label: 'F7', type: KeyType.KEY },
+  { code: 17, label: 'F8', type: KeyType.KEY },
+  { code: 18, label: 'F9', type: KeyType.KEY },
+  { code: 19, label: 'F10', type: KeyType.KEY },
+  { code: 20, label: 'F11', type: KeyType.KEY },
+  { code: 21, label: 'F12', type: KeyType.KEY },
 ]
 
-const extendedKeys: KeyOption[] = [
-  { code: 10, label: 'F1', type: 'extended' },
-  { code: 11, label: 'F2', type: 'extended' },
-  { code: 12, label: 'F3', type: 'extended' },
-  { code: 13, label: 'F4', type: 'extended' },
-  { code: 14, label: 'F5', type: 'extended' },
-  { code: 15, label: 'F6', type: 'extended' },
-  { code: 16, label: 'F7', type: 'extended' },
-  { code: 17, label: 'F8', type: 'extended' },
-  { code: 18, label: 'F9', type: 'extended' },
-  { code: 19, label: 'F10', type: 'extended' },
-  { code: 20, label: 'F11', type: 'extended' },
-  { code: 21, label: 'F12', type: 'extended' },
-]
-
-const mediaKeys: KeyOption[] = [
-  { code: 100, label: '播放/暂停', type: 'media' },
-  { code: 101, label: '停止', type: 'media' },
-  { code: 102, label: '上一曲', type: 'media' },
-  { code: 103, label: '下一曲', type: 'media' },
-  { code: 104, label: '音量+', type: 'media' },
-  { code: 105, label: '音量-', type: 'media' },
-  { code: 106, label: '静音', type: 'media' },
+const macroKeys: KeyOption[] = [
+  { code: 100, label: '播放/暂停', type: KeyType.KEY },
+  { code: 101, label: '停止', type: KeyType.KEY },
+  { code: 102, label: '上一曲', type: KeyType.KEY },
+  { code: 103, label: '下一曲', type: KeyType.KEY },
+  { code: 104, label: '音量+', type: KeyType.KEY },
+  { code: 105, label: '音量-', type: KeyType.KEY },
+  { code: 106, label: '静音', type: KeyType.KEY },
 ]
 
 const comboKeys: KeyOption[] = [
-  { code: 200, label: 'Ctrl+C', type: 'combo' },
-  { code: 201, label: 'Ctrl+V', type: 'combo' },
-  { code: 202, label: 'Ctrl+X', type: 'combo' },
-  { code: 203, label: 'Ctrl+Z', type: 'combo' },
-  { code: 204, label: 'Ctrl+S', type: 'combo' },
-  { code: 205, label: 'Ctrl+A', type: 'combo' },
-  { code: 206, label: 'Alt+Tab', type: 'combo' },
-  { code: 207, label: 'Win+D', type: 'combo' },
-  { code: 208, label: 'Win+E', type: 'combo' },
-  { code: 209, label: 'Win+L', type: 'combo' },
+  { code: 200, label: 'Ctrl+C', type: KeyType.COMBO },
+  { code: 201, label: 'Ctrl+V', type: KeyType.COMBO },
+  { code: 202, label: 'Ctrl+X', type: KeyType.COMBO },
+  { code: 203, label: 'Ctrl+Z', type: KeyType.COMBO },
+  { code: 204, label: 'Ctrl+S', type: KeyType.COMBO },
+  { code: 205, label: 'Ctrl+A', type: KeyType.COMBO },
+  { code: 206, label: 'Alt+Tab', type: KeyType.COMBO },
+  { code: 207, label: 'Win+D', type: KeyType.COMBO },
+  { code: 208, label: 'Win+E', type: KeyType.COMBO },
+  { code: 209, label: 'Win+L', type: KeyType.COMBO },
+]
+
+// 鼠标功能键 (协议 0x03)
+const mouseFuncKeys: KeyOption[] = [
+  { code: 0xF4, label: '左键', type: KeyType.MOUSE_FUNC },
+  { code: 0xF5, label: '右键', type: KeyType.MOUSE_FUNC },
+  { code: 0xF6, label: '中键', type: KeyType.MOUSE_FUNC },
+  { code: 0xF7, label: '后退', type: KeyType.MOUSE_FUNC },
+  { code: 0xF8, label: '前进', type: KeyType.MOUSE_FUNC },
+  { code: 0xF9, label: '滚轮上', type: KeyType.MOUSE_FUNC },
+  { code: 0xFA, label: '滚轮下', type: KeyType.MOUSE_FUNC },
+  { code: 0xD0, label: 'DPI切换', type: KeyType.MOUSE_FUNC },
+  { code: 0xD1, label: '回报率', type: KeyType.MOUSE_FUNC },
+  { code: 0xD2, label: '火力键', type: KeyType.MOUSE_FUNC },
+  { code: 0xD3, label: 'BT配对', type: KeyType.MOUSE_FUNC },
+  { code: 0xD4, label: '2.4G配对', type: KeyType.MOUSE_FUNC },
+  { code: 0xD5, label: '模式切换', type: KeyType.MOUSE_FUNC },
+  { code: 0xD6, label: '老板键', type: KeyType.MOUSE_FUNC },
 ]
 
 function selectKey(key: KeyOption) {

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, reactive } from 'vue'
-import type { KeyMapping, KeyTarget, KeyType } from '@/types/keyMapping'
-import { ProfileLayer } from '@/types/keyMapping'
+import type { KeyMapping, KeyTarget } from '@/types/keyMapping'
+import { ProfileLayer, KeyType } from '@/types/keyMapping'
 
 type ProfileKey = 'default' | 'office' | 'game1' | 'game2'
 
@@ -43,17 +43,14 @@ export const useKeyMappingStore = defineStore('keyMapping', () => {
       1: '左键',
       2: '右键',
       3: '中键',
-      4: '前进',
-      5: '后退',
-      6: 'DPI+',
-      7: 'DPI-',
-      8: '老按键',
-      9: '火力键',
+      4: '后退键',
+      5: '前进键',
+      6: 'DPI键',
     }
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 6; i++) {
       mappings[i] = {
         buttonId: i,
-        type: 'basic' as KeyType,
+        type: KeyType.KEY,
         target: {
           keyCode: i,
           label: defaultLabels[i] || `按键${i}`,
@@ -88,6 +85,11 @@ export const useKeyMappingStore = defineStore('keyMapping', () => {
     profiles[layer].isModified = false
   }
 
+  function setMappings(profile: ProfileKey, mappings: Record<number, KeyMapping>) {
+    profiles[profile].mappings = mappings
+    profiles[profile].isModified = false
+  }
+
   return {
     currentProfile,
     profiles,
@@ -95,5 +97,6 @@ export const useKeyMappingStore = defineStore('keyMapping', () => {
     updateMapping,
     markAsSaved,
     resetProfile,
+    setMappings,
   }
 })

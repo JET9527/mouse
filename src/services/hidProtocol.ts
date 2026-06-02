@@ -1,7 +1,7 @@
 import { ref, onUnmounted, watch } from 'vue'
 import { HIDCommand } from '@/utils/constants'
 import { ProfileLayer } from '@/types/keyMapping'
-import type { LightingConfig } from '@/types/lighting'
+import type { LightingConfig, RGBColor } from '@/types/lighting'
 import type { ProtocolDeviceInfo } from '@/types/device'
 import type { Ref } from 'vue'
 
@@ -145,10 +145,16 @@ export class HIDProtocol {
     
     if (isProtocolPacket) {
       const messageId = data[2]
+      // 打印所有收到的协议响应
+      const hexStr = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ')
+      console.log(`[HIDProtocol] 收到响应 reportId=${reportId} msgId=0x${messageId.toString(16).padStart(2, '0')} 长度=${data.length} 数据=[${hexStr}]`)
+      
       const resolver = this.responseResolvers.get(messageId)
       if (resolver) {
         resolver.resolve(data)
         this.responseResolvers.delete(messageId)
+      } else {
+        console.warn(`[HIDProtocol] 没有等待 msgId=0x${messageId.toString(16).padStart(2, '0')} 的响应`)
       }
     }
   }
@@ -370,23 +376,27 @@ export class HIDProtocol {
     await this.sendPacket(data)
     const response = await this.waitForResponse(0x13)
     
-    // 解析灯效参数结构体
+    // 解析灯效参数结构体（29字节：5字节头部 + 8×3字节 RGB LED）
     const patch = response.slice(3, -2)
+    const ledCount = 8
+    const bytesPerLed = 3
+    const colors: RGBColor[] = []
+    for (let i = 0; i < ledCount; i++) {
+      const offset = 5 + i * bytesPerLed
+      colors.push({
+        r: patch[offset],
+        g: patch[offset + 1],
+        b: patch[offset + 2],
+      })
+    }
     return {
       mode: patch[0],
       runningSpeed: patch[1],
       colorId: patch[2],
       lightness: patch[3],
       direction: patch[4],
-      colors: [
-        { r: patch[5], g: patch[6], b: patch[7] },
-        { r: patch[8], g: patch[9], b: patch[10] },
-        { r: patch[11], g: patch[12], b: patch[13] },
-        { r: patch[14], g: patch[15], b: patch[16] },
-        { r: patch[17], g: patch[18], b: patch[19] },
-        { r: patch[20], g: patch[21], b: patch[22] },
-      ],
-      magic: patch[23],
+      colors,
+      magic: 0,
     }
   }
 
@@ -394,47 +404,48 @@ export class HIDProtocol {
    * 设置灯效数据 (PC → MCU) MSG_ID = 0x14
    */
   async setLightingConfig(config: LightingConfig): Promise<void> {
-    const patch = new Uint8Array(24)
+    // 协议格式：5字节头部 + 8×3字节 RGB LED，共29字节
+    const patch = new Uint8Array(29)
     patch[0] = config.mode
     patch[1] = config.runningSpeed
     patch[2] = config.colorId
     patch[3] = config.lightness
     patch[4] = config.direction
     
-    // 6颗LED的颜色值
-    for (let i = 0; i < 6; i++) {
+    // 8颗LED颜色值（每LED 3字节：R,G,B）
+    for (let i = 0; i < 8; i++) {
       const color = config.colors[i] || { r: 0, g: 0, b: 0 }
-      patch[5 + i * 3] = color.r
-      patch[6 + i * 3] = color.g
-      patch[7 + i * 3] = color.b
+      const offset = 5 + i * 3
+      patch[offset] = color.r
+      patch[offset + 1] = color.g
+      patch[offset + 2] = color.b
     }
-    
-    patch[23] = config.magic
 
     const data = new Uint8Array([0x55, patch.length, 0x14, ...patch, 0x0D, 0x0A])
+    const hexStr = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ')
+    console.log(`[HIDProtocol] 发送 0x14 mode=${config.mode} 数据=[${hexStr}]`)
     await this.sendPacket(data)
-    await this.waitForResponse(0x15)
   }
 
   /**
    * 保存灯效设置 (PC → MCU) MSG_ID = 0x16
    */
   async saveLightingConfig(config: LightingConfig): Promise<void> {
-    const patch = new Uint8Array(24)
+    // 协议格式：5字节头部 + 8×3字节 RGB LED，共29字节
+    const patch = new Uint8Array(29)
     patch[0] = config.mode
     patch[1] = config.runningSpeed
     patch[2] = config.colorId
     patch[3] = config.lightness
     patch[4] = config.direction
     
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       const color = config.colors[i] || { r: 0, g: 0, b: 0 }
-      patch[5 + i * 3] = color.r
-      patch[6 + i * 3] = color.g
-      patch[7 + i * 3] = color.b
+      const offset = 5 + i * 3
+      patch[offset] = color.r
+      patch[offset + 1] = color.g
+      patch[offset + 2] = color.b
     }
-    
-    patch[23] = config.magic
 
     const data = new Uint8Array([0x55, patch.length, 0x16, ...patch, 0x0D, 0x0A])
     await this.sendPacket(data)
@@ -466,7 +477,7 @@ export class HIDProtocol {
   async resetKeyMappings(profileId: ProfileLayer): Promise<Uint8Array> {
     const data = new Uint8Array([0x55, 0x01, 0x34, profileId, 0x0D, 0x0A])
     await this.sendPacket(data)
-    const response = await this.waitForResponse(0x35)
+    const response = await this.waitForResponse(0x31)
     return response.slice(4, -2)
   }
 
