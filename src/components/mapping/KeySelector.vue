@@ -112,11 +112,19 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   confirm: [key: KeyOption]
+  'tab-change': [tab: string]
 }>()
 
 const visible = ref(props.modelValue)
 const activeType = ref('mouseFunc')
 const selectedKey = ref<KeyOption | null>(null)
+
+// 切换到组合键tab时通知父组件获取设备组合快捷键数据
+watch(activeType, (tab) => {
+  if (tab === 'combo') {
+    emit('tab-change', tab)
+  }
+})
 
 watch(() => props.modelValue, (val) => {
   visible.value = val
@@ -161,6 +169,7 @@ const comboKeys: KeyOption[] = [
   { code: 207, label: 'Win+D', type: KeyType.COMBO },
   { code: 208, label: 'Win+E', type: KeyType.COMBO },
   { code: 209, label: 'Win+L', type: KeyType.COMBO },
+  { code: 210, label: 'Win+X', type: KeyType.COMBO },
 ]
 
 // 鼠标功能键 (协议 0x03)

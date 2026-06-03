@@ -467,8 +467,11 @@ export class HIDProtocol {
    */
   async saveKeyMappings(profileId: ProfileLayer, mappingData: Uint8Array): Promise<void> {
     const data = new Uint8Array([0x55, mappingData.length + 1, 0x32, profileId, ...mappingData, 0x0D, 0x0A])
+    console.log(`[HIDProtocol] 保存按键定义 REQ(0x32):`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
-    await this.waitForResponse(0x33)
+    console.log(`[HIDProtocol] 等待按键定义 RSP(0x33)...`)
+    const response = await this.waitForResponse(0x33)
+    console.log(`[HIDProtocol] 按键定义 RSP(0x33):`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
   }
 
   /**
@@ -486,8 +489,10 @@ export class HIDProtocol {
    */
   async getShortcutKey(profileId: ProfileLayer, keyIndex: number): Promise<Uint8Array> {
     const data = new Uint8Array([0x55, 0x02, 0x3A, profileId, keyIndex, 0x0D, 0x0A])
+    console.log(`[HIDProtocol] 获取组合快捷键 REQ(0x3A):`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
     const response = await this.waitForResponse(0x3B)
+    console.log(`[HIDProtocol] 组合快捷键 RSP(0x3B):`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
     return response.slice(5, 10)
   }
 
@@ -496,8 +501,11 @@ export class HIDProtocol {
    */
   async saveShortcutKey(profileId: ProfileLayer, keyIndex: number, shortcutData: Uint8Array): Promise<void> {
     const data = new Uint8Array([0x55, 0x07, 0x3C, profileId, keyIndex, ...shortcutData, 0x0D, 0x0A])
+    console.log(`[HIDProtocol] 保存组合快捷键 REQ(0x3C):`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
-    await this.waitForResponse(0x3D)
+    console.log(`[HIDProtocol] 等待组合快捷键 RSP(0x3D)...`)
+    const response = await this.waitForResponse(0x3D)
+    console.log(`[HIDProtocol] 组合快捷键 RSP(0x3D):`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
   }
 
   /**
@@ -505,9 +513,14 @@ export class HIDProtocol {
    */
   async getMacroData(macroIndex: number): Promise<Uint8Array> {
     const data = new Uint8Array([0x55, 0x01, 0x36, macroIndex, 0x0D, 0x0A])
+    console.log(`[HIDProtocol] 获取宏数据 REQ(0x36) macro=${macroIndex}:`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
+    console.log(`[HIDProtocol] 等待宏数据 RSP(0x37)...`)
     const response = await this.waitForResponse(0x37)
-    return response.slice(4, -2)
+    console.log(`[HIDProtocol] 宏数据 RSP(0x37) macro=${macroIndex} 完整响应:`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
+    const payload = response.slice(4, -2)
+    console.log(`[HIDProtocol] 宏数据 RSP(0x37) macro=${macroIndex} payload(${payload.length}B):`, Array.from(payload).map(b => b.toString(16).padStart(2, '0')).join(' '))
+    return payload
   }
 
   /**
@@ -515,8 +528,11 @@ export class HIDProtocol {
    */
   async saveMacroData(macroIndex: number, macroData: Uint8Array): Promise<void> {
     const data = new Uint8Array([0x55, macroData.length + 1, 0x38, macroIndex, ...macroData, 0x0D, 0x0A])
+    console.log(`[HIDProtocol] 保存宏数据 REQ(0x38) macro=${macroIndex} len=${macroData.length}:`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
-    await this.waitForResponse(0x39)
+    console.log(`[HIDProtocol] 等待宏保存 RSP(0x39)...`)
+    const response = await this.waitForResponse(0x39)
+    console.log(`[HIDProtocol] 宏保存 RSP(0x39) macro=${macroIndex}:`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
   }
 
   /**
