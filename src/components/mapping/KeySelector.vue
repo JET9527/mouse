@@ -2,7 +2,7 @@
   <el-dialog
     v-model="visible"
     title="选择按键功能"
-    width="520px"
+    width="720px"
     :close-on-click-modal="false"
     class="key-selector-dialog"
   >
@@ -30,26 +30,16 @@
           </div>
         </el-tab-pane>
 
-        <!-- Extended keys -->
+        <!-- Extended keys (国际键值码) -->
         <el-tab-pane label="按键定义" name="keyDef">
-          <div class="key-grid">
-            <button
-              v-for="key in keyDefKeys"
-              :key="key.code"
-              class="key-item"
-              :class="{ selected: selectedKey?.code === key.code }"
-              @click="selectKey(key)"
-            >
-              {{ key.label }}
-            </button>
-          </div>
+          <KeyCodeSelector @select="handleKeyDefSelect" ref="keyDefSelectorRef" />
         </el-tab-pane>
 
         <!-- Macro keys -->
         <el-tab-pane label="宏录制" name="macro">
-          <div class="key-grid">
+          <div class="key-grid" v-if="macroKeysWithData.length > 0">
             <button
-              v-for="key in macroKeys"
+              v-for="key in macroKeysWithData"
               :key="key.code"
               class="key-item"
               :class="{ selected: selectedKey?.code === key.code }"
@@ -58,6 +48,7 @@
               {{ key.label }}
             </button>
           </div>
+          <div v-else class="empty-hint">暂无录制数据</div>
         </el-tab-pane>
 
         <!-- Combo keys -->
@@ -77,8 +68,8 @@
 
       </el-tabs>
 
-      <!-- Selected key preview -->
-      <div class="selected-preview" v-if="selectedKey">
+      <!-- Selected key preview (按键定义tab使用KeyCodeSelector自带的预览) -->
+      <div class="selected-preview" v-if="selectedKey && activeType !== 'keyDef'">
         <span class="preview-label">已选择：</span>
         <span class="preview-value">{{ selectedKey.label }}</span>
       </div>
@@ -94,9 +85,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
+import { useDeviceStore } from '@/stores/modules/device'
+import { parseMacroData } from '@/utils/macroProtocol'
+import KeyCodeSelector from './KeyCodeSelector.vue'
 
 interface KeyOption {
   code: number
@@ -115,16 +109,49 @@ const emit = defineEmits<{
   'tab-change': [tab: string]
 }>()
 
+const deviceStore = useDeviceStore()
 const visible = ref(props.modelValue)
 const activeType = ref('mouseFunc')
 const selectedKey = ref<KeyOption | null>(null)
+const macroHasData = ref<boolean[]>(Array(15).fill(false))
+const keyDefSelectorRef = ref<InstanceType<typeof KeyCodeSelector> | null>(null)
+
+const macroKeysWithData = computed(() =>
+  macroKeys.filter((_, i) => macroHasData.value[i])
+)
 
 // 切换到组合键tab时通知父组件获取设备组合快捷键数据
-watch(activeType, (tab) => {
+// 切换到宏录制tab时获取设备宏数据
+watch(activeType, async (tab, oldTab) => {
+  // 切换tab时清空选中，避免不同功能tab间状态携带
+  if (oldTab) {
+    selectedKey.value = null
+  }
+  // 离开按键定义tab时清除KeyCodeSelector选中
+  if (oldTab === 'keyDef' && keyDefSelectorRef.value) {
+    keyDefSelectorRef.value.clearSelection()
+  }
+
   if (tab === 'combo') {
     emit('tab-change', tab)
+  } else if (tab === 'macro') {
+    emit('tab-change', tab)
+    await fetchMacroDataStatus()
   }
 })
+
+async function fetchMacroDataStatus() {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  for (let i = 0; i < 15; i++) {
+    try {
+      const raw = await deviceStore.protocol.getMacroData(i)
+      const steps = parseMacroData(raw)
+      macroHasData.value[i] = steps.length > 0
+    } catch {
+      macroHasData.value[i] = false
+    }
+  }
+}
 
 watch(() => props.modelValue, (val) => {
   visible.value = val
@@ -133,30 +160,11 @@ watch(() => props.modelValue, (val) => {
 
 watch(visible, (val) => emit('update:modelValue', val))
 
-const keyDefKeys: KeyOption[] = [
-  { code: 10, label: 'F1', type: KeyType.KEY },
-  { code: 11, label: 'F2', type: KeyType.KEY },
-  { code: 12, label: 'F3', type: KeyType.KEY },
-  { code: 13, label: 'F4', type: KeyType.KEY },
-  { code: 14, label: 'F5', type: KeyType.KEY },
-  { code: 15, label: 'F6', type: KeyType.KEY },
-  { code: 16, label: 'F7', type: KeyType.KEY },
-  { code: 17, label: 'F8', type: KeyType.KEY },
-  { code: 18, label: 'F9', type: KeyType.KEY },
-  { code: 19, label: 'F10', type: KeyType.KEY },
-  { code: 20, label: 'F11', type: KeyType.KEY },
-  { code: 21, label: 'F12', type: KeyType.KEY },
-]
-
-const macroKeys: KeyOption[] = [
-  { code: 100, label: '播放/暂停', type: KeyType.KEY },
-  { code: 101, label: '停止', type: KeyType.KEY },
-  { code: 102, label: '上一曲', type: KeyType.KEY },
-  { code: 103, label: '下一曲', type: KeyType.KEY },
-  { code: 104, label: '音量+', type: KeyType.KEY },
-  { code: 105, label: '音量-', type: KeyType.KEY },
-  { code: 106, label: '静音', type: KeyType.KEY },
-]
+const macroKeys: KeyOption[] = Array.from({ length: 15 }, (_, i) => ({
+  code: i,
+  label: `M${i}`,
+  type: KeyType.MACRO,
+}))
 
 const comboKeys: KeyOption[] = [
   { code: 200, label: 'Ctrl+C', type: KeyType.COMBO },
@@ -192,6 +200,15 @@ const mouseFuncKeys: KeyOption[] = [
 
 function selectKey(key: KeyOption) {
   selectedKey.value = key
+  // 切换到按键定义tab时清除KeyCodeSelector选中
+  if (activeType.value !== 'keyDef' && keyDefSelectorRef.value) {
+    keyDefSelectorRef.value.clearSelection()
+  }
+}
+
+// 从KeyCodeSelector选择国际键值码
+function handleKeyDefSelect(key: { code: number; label: string }) {
+  selectedKey.value = { code: key.code, label: key.label, type: KeyType.KEY }
 }
 
 function handleConfirm() {
@@ -254,6 +271,10 @@ function handleCancel() {
   padding: 4px;
 }
 
+.macro-grid {
+  grid-template-columns: repeat(5, 1fr);
+}
+
 .key-item {
   padding: 10px 8px;
   background: $bg-secondary;
@@ -275,6 +296,18 @@ function handleCancel() {
     background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.1));
     color: $accent-blue;
     box-shadow: $glow-blue;
+  }
+
+  &.has-data {
+    border-color: #52c41a;
+    color: #52c41a;
+
+    &.selected {
+      border-color: $accent-blue;
+      color: $accent-blue;
+      background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.1));
+      box-shadow: $glow-blue;
+    }
   }
 
   &.combo-item {

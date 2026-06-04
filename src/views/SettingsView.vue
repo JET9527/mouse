@@ -9,31 +9,16 @@
         </div>
 
         <div class="dpi-levels">
-          <div class="dpi-level-item" v-for="(level, index) in dpiLevels" :key="index">
+          <div class="dpi-level-item" v-for="(dpi, index) in dpiValues" :key="index">
             <span class="level-label">档位 {{ index + 1 }}</span>
-            <div class="level-inputs">
-              <div class="input-group">
-                <label>X</label>
-                <input type="number" v-model.number="level.dpiX" :min="100" :max="26000" :step="50" />
-              </div>
-              <div class="input-group">
-                <label>Y</label>
-                <input type="number" v-model.number="level.dpiY" :min="100" :max="26000" :step="50" />
-              </div>
-            </div>
+            <span class="level-value">{{ dpi }} DPI</span>
             <el-switch
-              v-model="level.enabled"
+              :model-value="dpiEnabled[index]"
               active-text="启用"
               :active-color="'#00d4ff'"
+              @change="(val: boolean) => onDpiSwitchChange(val, index)"
             />
           </div>
-        </div>
-
-        <div class="setting-row">
-          <label>当前档位</label>
-          <el-select v-model="activeDpiIndex" size="small" style="width: 120px">
-            <el-option v-for="i in 5" :key="i" :label="`档位 ${i}`" :value="i - 1" />
-          </el-select>
         </div>
       </div>
 
@@ -46,144 +31,156 @@
 
         <div class="polling-rates">
           <button
-            v-for="rate in [125, 250, 500, 1000, 2000, 4000]"
+            v-for="rate in pollingRateOptions"
             :key="rate"
             class="rate-btn"
             :class="{ active: pollingRate === rate }"
-            @click="pollingRate = rate"
+            @click="onPollingRateChange(rate)"
           >
             {{ rate }}Hz
           </button>
         </div>
       </div>
 
-      <!-- Pointer & Wheel Speed -->
-      <div class="settings-panel">
+      <!-- Sleep Time -->
+      <div class="settings-panel sleep-panel">
         <div class="panel-title">
-          <el-icon><Pointer /></el-icon>
-          速度设置
+          <el-icon><Moon /></el-icon>
+          休眠时间设置
         </div>
 
-        <div class="setting-row">
-          <label>指针速度</label>
-          <el-slider v-model="pointerSpeed" :min="1" :max="20" :step="1" show-input input-size="small" />
-        </div>
-
-        <div class="setting-row">
-          <label>滚轮速度</label>
-          <el-slider v-model="wheelSpeed" :min="1" :max="20" :step="1" show-input input-size="small" />
-        </div>
+        <el-slider
+          v-model="sleepLevel"
+          :min="0"
+          :max="4"
+          :step="1"
+          show-stops
+          :marks="{
+            0: '档位1',
+            1: '档位2',
+            2: '档位3',
+            3: '档位4',
+            4: '档位5'
+          }"
+          @change="onSleepLevelChange"
+        />
       </div>
 
-      <!-- Fire Key -->
-      <div class="settings-panel">
-        <div class="panel-title">
-          <el-icon><Odometer /></el-icon>
-          火力键设置
-        </div>
 
-        <div class="setting-row">
-          <label>启用火力键</label>
-          <el-switch v-model="fireKeyEnabled" active-color="#00d4ff" />
-        </div>
-
-        <div class="setting-row" v-if="fireKeyEnabled">
-          <label>触发按钮</label>
-          <el-select v-model="fireKeyButton" size="small" style="width: 120px">
-            <el-option v-for="btn in fireKeyButtons" :key="btn.id" :label="btn.label" :value="btn.id" />
-          </el-select>
-        </div>
-
-        <div class="setting-row" v-if="fireKeyEnabled">
-          <label>点击间隔 (ms)</label>
-          <el-input-number v-model="fireKeyInterval" :min="10" :max="500" :step="10" size="small" />
-        </div>
-
-        <div class="setting-row" v-if="fireKeyEnabled">
-          <label>持续时间 (ms, 0=持续)</label>
-          <el-input-number v-model="fireKeyDuration" :min="0" :max="60000" :step="100" size="small" />
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Aim, Timer, Pointer, Odometer } from '@element-plus/icons-vue'
+import { ref, watch } from 'vue'
+import { Aim, Timer, Moon } from '@element-plus/icons-vue'
 import { useDeviceStore } from '@/stores/modules/device'
-import { useWebHID } from '@/composables/useWebHID'
-import { HIDProtocol } from '@/services/hidProtocol'
 import { ElMessage } from 'element-plus'
 
 const deviceStore = useDeviceStore()
-const { sendReport } = useWebHID()
-const protocol = new HIDProtocol(sendReport)
 
-const dpiLevels = ref([
-  { dpiX: 800, dpiY: 800, enabled: true },
-  { dpiX: 1200, dpiY: 1200, enabled: true },
-  { dpiX: 1600, dpiY: 1600, enabled: true },
-  { dpiX: 2400, dpiY: 2400, enabled: false },
-  { dpiX: 3200, dpiY: 3200, enabled: false },
-])
+// DPI 6档固定值（对应协议0x00~0x05）
+const dpiValues = [800, 1600, 3200, 4800, 9600, 20000]
+const dpiEnabled = ref([true, false, false, false, false, false])
 
-const activeDpiIndex = ref(0)
+// 回报率 7档（对应协议0x00~0x06）
+const pollingRateOptions = [125, 250, 500, 1000, 2000, 4000, 8000]
 const pollingRate = ref(1000)
-const pointerSpeed = ref(10)
-const wheelSpeed = ref(10)
-const fireKeyEnabled = ref(false)
-const fireKeyButton = ref(9)
-const fireKeyInterval = ref(50)
-const fireKeyDuration = ref(0)
 
-const fireKeyButtons = [
-  { id: 1, label: '左键' },
-  { id: 2, label: '右键' },
-  { id: 3, label: '中键' },
-  { id: 4, label: '前进' },
-  { id: 5, label: '后退' },
-  { id: 6, label: 'DPI+' },
-  { id: 7, label: 'DPI-' },
-  { id: 8, label: '老按键' },
-  { id: 9, label: '火力键' },
-]
+// 休眠时间 5档（对应协议0x00~0x04）
+const sleepLevel = ref(0)
 
-// Watch for changes and auto-send to device
-import { watch } from 'vue'
+// 保存设备原始性能参数（指针速度、滚轮速度、火力键时间等保留原值）
+let originalRaw: Uint8Array | null = null
 
-watch(pollingRate, async (newRate) => {
-  if (deviceStore.isConnected) {
-    try {
-      await protocol.setPollingRate(newRate)
-      ElMessage.success(`回报率已设置为 ${newRate}Hz`)
-    } catch (e) {
-      console.error('设置回报率失败:', e)
+// 性能参数 8字节格式: {ptrSpeed, wheelSpeed, fireTime(LE), pollingRateIdx, dpiLevel, sleepLevel, reserved}
+function buildPerformanceData(): Uint8Array {
+  const data = originalRaw ? new Uint8Array(originalRaw) : new Uint8Array(8)
+  data[4] = pollingRateOptions.indexOf(pollingRate.value) // 回报率索引
+  data[5] = dpiEnabled.value.findIndex(v => v) // DPI挡位
+  data[6] = sleepLevel.value // 休眠时间
+  return data
+}
+
+async function saveToDevice(context: string = '') {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  const perfData = buildPerformanceData()
+  const hexStr = Array.from(perfData).map(b => b.toString(16).padStart(2, '0')).join(' ')
+  console.log(`[Settings] 保存性能${context} data=[${hexStr}]`)
+  try {
+    await deviceStore.protocol.savePerformanceSettings(perfData)
+    console.log(`[Settings] 保存性能${context} 成功`)
+    ElMessage.success(`设置保存成功`)
+  } catch (e) {
+    console.error('[Settings] 保存设置失败:', e)
+    ElMessage.error(`设置保存失败: ${(e as Error).message}`)
+  }
+}
+
+// DPI switch 只能开一个
+function onDpiSwitchChange(enabled: boolean, index: number) {
+  if (!enabled) {
+    dpiEnabled.value[index] = true
+    return
+  }
+  for (let i = 0; i < dpiEnabled.value.length; i++) {
+    dpiEnabled.value[i] = i === index
+  }
+  console.log(`[Settings] DPI挡位切换: 档位${index + 1}(${dpiValues[index]}DPI)`)
+  saveToDevice('DPI')
+}
+
+// 页面加载时从设备获取性能参数
+async function fetchSettings() {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  try {
+    const raw = await deviceStore.protocol.getPerformanceSettings()
+    const hexStr = Array.from(raw).map(b => b.toString(16).padStart(2, '0')).join(' ')
+    console.log(`[Settings] 获取性能参数响应(8B): [${hexStr}]`)
+    // 保存原始数据，后续保存时保留指针速度、滚轮速度、火力键时间
+    originalRaw = new Uint8Array(raw)
+    const newEnabled = new Array(6).fill(false)
+    // raw[0]=指针速度, raw[1]=滚轮速度, raw[2~3]=火力键时间, raw[4]=回报率, raw[5]=DPI, raw[6]=休眠, raw[7]=保留
+    const dpiLevel = raw[5]
+    const rateIdx = raw[4]
+    const sleepIdx = raw[6]
+    console.log(`[Settings] 解析: DPI挡位=${dpiLevel}, 回报率索引=${rateIdx}, 休眠挡位=${sleepIdx}`)
+    if (dpiLevel >= 0 && dpiLevel < 6) newEnabled[dpiLevel] = true
+    dpiEnabled.value = newEnabled
+
+    if (rateIdx >= 0 && rateIdx < pollingRateOptions.length) {
+      pollingRate.value = pollingRateOptions[rateIdx]
     }
-  }
-})
 
-watch(pointerSpeed, async (newVal) => {
-  if (deviceStore.isConnected) {
-    // Send pointer speed to device
+    sleepLevel.value = sleepIdx >= 0 && sleepIdx <= 4 ? sleepIdx : 0
+  } catch (e) {
+    console.error('[Settings] 获取设置失败:', e)
   }
-})
+}
 
-watch(wheelSpeed, async (newVal) => {
-  if (deviceStore.isConnected) {
-    // Send wheel speed to device
+// 设备连接且protocol就绪后自动获取
+watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
+  if (ready) {
+    await fetchSettings()
   }
-})
+}, { immediate: true })
 
-watch(fireKeyEnabled, async (enabled) => {
-  if (deviceStore.isConnected && enabled) {
-    try {
-      await protocol.setFireKey(true, fireKeyButton.value, fireKeyInterval.value, fireKeyDuration.value)
-    } catch (e) {
-      console.error('设置火力键失败:', e)
-    }
-  }
-})
+// 回报率切换保存
+function onPollingRateChange(rate: number) {
+  pollingRate.value = rate
+  console.log(`[Settings] 回报率切换: ${rate}Hz`)
+  saveToDevice('回报率')
+}
+
+// 休眠时间切换保存
+function onSleepLevelChange(val: number) {
+  console.log(`[Settings] 休眠时间切换: 档位${val + 1}`)
+  saveToDevice('休眠')
+}
+
+
+
+
 </script>
 
 <style lang="scss" scoped>
@@ -245,32 +242,23 @@ watch(fireKeyEnabled, async (enabled) => {
   min-width: 50px;
 }
 
-.level-inputs {
-  display: flex;
-  gap: 8px;
+.level-value {
   flex: 1;
-}
-
-.input-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  label {
-    font-size: 12px;
-    color: $text-muted;
-  }
-
-  input {
-    width: 70px;
-  }
+  font-size: 14px;
+  font-weight: 600;
+  color: $accent-blue;
 }
 
 .polling-rates {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
+
+.sleep-panel {
+  grid-column: 1 / -1;
+}
+
 
 .rate-btn {
   padding: 10px;

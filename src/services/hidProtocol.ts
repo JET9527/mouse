@@ -540,9 +540,14 @@ export class HIDProtocol {
    */
   async getPerformanceSettings(): Promise<Uint8Array> {
     const data = new Uint8Array([0x55, 0x01, 0x50, 0x66, 0x0D, 0x0A])
+    console.log(`[HIDProtocol] 获取性能参数 REQ(0x50):`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
+    console.log(`[HIDProtocol] 等待性能参数 RSP(0x51)...`)
     const response = await this.waitForResponse(0x51)
-    return response.slice(3, 11)
+    console.log(`[HIDProtocol] 性能参数 RSP(0x51):`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
+    const payload = response.slice(3, 11)
+    console.log(`[HIDProtocol] 性能参数 payload(8B):`, Array.from(payload).map(b => b.toString(16).padStart(2, '0')).join(' '))
+    return payload
   }
 
   /**
@@ -550,8 +555,11 @@ export class HIDProtocol {
    */
   async savePerformanceSettings(settings: Uint8Array): Promise<void> {
     const data = new Uint8Array([0x55, 0x08, 0x52, ...settings, 0x0D, 0x0A])
+    console.log(`[HIDProtocol] 保存性能参数 REQ(0x52):`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
-    await this.waitForResponse(0x53)
+    console.log(`[HIDProtocol] 等待性能保存 RSP(0x53)...`)
+    const response = await this.waitForResponse(0x53)
+    console.log(`[HIDProtocol] 性能保存 RSP(0x53):`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
   }
 
   /**

@@ -29,9 +29,8 @@ export const DEFAULT_PROFILE_NAME = '默认层'
 export const NAV_TABS = [
   { key: 'mapping', label: '基本设置', path: '/mapping' },
   { key: 'macro', label: '宏设置', path: '/macro' },
-  { key: 'settings', label: '高级设置', path: '/settings' },
   { key: 'lighting', label: '灯光设置', path: '/lighting' },
-  { key: 'about', label: '关于', path: '/about' },
+  { key: 'settings', label: '高级设置', path: '/settings' },
 ]
 
 // HID Report command IDs

@@ -29,6 +29,8 @@
       </button>
     </div>
 
+    <ConnectionStatus />
+
     <!-- Language switch -->
     <div class="lang-switch">
       <span class="lang-text">{{ appStore.language === 'zh-CN' ? '中文' : 'EN' }}</span>
@@ -40,6 +42,7 @@
 import { NAV_TABS } from '@/utils/constants'
 import { useAppStore } from '@/stores/modules/app'
 import { useRouter } from 'vue-router'
+import ConnectionStatus from '../common/ConnectionStatus.vue'
 
 const appStore = useAppStore()
 const router = useRouter()
@@ -146,6 +149,7 @@ function handleTabClick(tab: typeof NAV_TABS[0]) {
   justify-content: center;
   width: 60px;
   height: 32px;
+  margin-left: 16px;
   background: rgba(15, 52, 96, 0.5);
   border: 1px solid $border-color;
   border-radius: $radius-sm;

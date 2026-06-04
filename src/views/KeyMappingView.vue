@@ -1,13 +1,5 @@
 <template>
   <div class="key-mapping-view">
-    <!-- Toolbar -->
-    <div class="mapping-toolbar">
-      <span class="toolbar-title">按键定义</span>
-      <button class="gaming-btn btn-reset" @click="handleResetMappings" :disabled="!deviceStore.isConnected">
-        复位按键定义
-      </button>
-    </div>
-
     <div class="mapping-container">
       <!-- Left button list -->
       <ButtonList
@@ -19,6 +11,9 @@
       <!-- Mouse visual -->
       <div class="mouse-area">
         <MouseVisual />
+        <button class="gaming-btn btn-reset" @click="handleResetMappings" :disabled="!deviceStore.isConnected">
+          复位按键定义
+        </button>
       </div>
 
       <!-- Right button list -->
@@ -176,6 +171,10 @@ watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
 
 // 获取按键标签（简易实现，后续可完善）
 function getKeyLabel(keyCode: number, type?: number): string {
+  // 宏录制：键值为宏ID 0~14（UI显示M0~M14）
+  if (type === KeyType.MACRO) {
+    return `M${keyCode}`
+  }
   if (keyCode >= 1 && keyCode <= 9) {
     return defaultButtonLabels[keyCode]
   }
@@ -402,7 +401,7 @@ async function handleResetMappings() {
 }
 
 // 从store的mappings构建18字节协议数据块：{type, keyCode} × 9
-// 设备只有6个按键，7~9填0x00占位
+// 设备只有6个按键，7~9默认鼠标功能(0x03)补0x00
 function buildMappingDataBlock(mappings: Record<number, import('@/types/keyMapping').KeyMapping>): Uint8Array {
   const data = new Uint8Array(18)
   for (let i = 0; i < 9; i++) {
@@ -412,7 +411,8 @@ function buildMappingDataBlock(mappings: Record<number, import('@/types/keyMappi
       data[i * 2] = mapping.type as number
       data[i * 2 + 1] = (mapping.target as any).keyCode ?? 0
     } else {
-      data[i * 2] = 0x00
+      // 无定义时默认鼠标功能(0x03)，值补0x00
+      data[i * 2] = 0x03
       data[i * 2 + 1] = 0x00
     }
   }
@@ -432,40 +432,25 @@ function buildMappingDataBlock(mappings: Record<number, import('@/types/keyMappi
   padding: 20px;
 }
 
-.mapping-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 900px;
-  margin-bottom: 20px;
-  padding: 0 4px;
+.btn-reset {
+  font-size: 12px;
+  padding: 6px 14px;
+  margin-top: 16px;
+  background: rgba(255, 77, 77, 0.15);
+  border: 1px solid rgba(255, 77, 77, 0.4);
+  color: $text-primary;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: all 0.2s;
 
-  .toolbar-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: $text-primary;
+  &:hover:not(:disabled) {
+    background: rgba(255, 77, 77, 0.3);
+    border-color: rgba(255, 77, 77, 0.7);
   }
 
-  .btn-reset {
-    font-size: 12px;
-    padding: 6px 14px;
-    background: rgba(255, 77, 77, 0.15);
-    border: 1px solid rgba(255, 77, 77, 0.4);
-    color: $text-primary;
-    border-radius: $radius-sm;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover:not(:disabled) {
-      background: rgba(255, 77, 77, 0.3);
-      border-color: rgba(255, 77, 77, 0.7);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 }
 

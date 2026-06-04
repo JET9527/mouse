@@ -2,9 +2,6 @@
   <div class="app-layout" v-loading="appStore.isLoading" element-loading-text="请稍候..." element-loading-background="rgba(0, 0, 0, 0.7)">
     <TopBar />
     <div class="main-content">
-      <div class="connection-bar">
-        <ConnectionStatus />
-      </div>
       <router-view />
     </div>
     <BottomBar />
@@ -15,7 +12,6 @@
 <script setup lang="ts">
 import TopBar from './TopBar.vue'
 import BottomBar from './BottomBar.vue'
-import ConnectionStatus from '../common/ConnectionStatus.vue'
 import BrowserWarning from '../common/BrowserWarning.vue'
 import { useAppStore } from '@/stores/modules/app'
 import { getBrowserInfo } from '@/utils/helpers'

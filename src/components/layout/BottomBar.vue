@@ -15,25 +15,13 @@
 
     <!-- Action buttons -->
     <div class="action-buttons">
-      <button class="gaming-btn btn-sm" @click="handleImport">
-        <el-icon><Upload /></el-icon>
-        导入
-      </button>
-      <button class="gaming-btn btn-sm" @click="handleExport">
-        <el-icon><Download /></el-icon>
-        导出
-      </button>
       <button class="gaming-btn btn-sm" @click="handleReset">
         <el-icon><Refresh /></el-icon>
         重置
       </button>
-      <button class="gaming-btn btn-sm btn-success" @click="handleApply">
-        <el-icon><Check /></el-icon>
-        应用
-      </button>
-      <button class="gaming-btn btn-sm btn-danger" @click="handleCancel">
-        <el-icon><Close /></el-icon>
-        取消
+      <button class="gaming-btn btn-sm btn-danger" @click="handleRestoreFactory">
+        <el-icon><WarningFilled /></el-icon>
+        复位
       </button>
     </div>
   </div>
@@ -44,21 +32,14 @@ import { PROFILE_LAYERS } from '@/utils/constants'
 import { useAppStore } from '@/stores/modules/app'
 import { useKeyMappingStore } from '@/stores/modules/keyMapping'
 import { useDeviceStore } from '@/stores/modules/device'
-import { useWebHID } from '@/composables/useWebHID'
-import { HIDProtocol } from '@/services/hidProtocol'
-import { ConfigFileService } from '@/services/configFileService'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, Download, Refresh, Check, Close } from '@element-plus/icons-vue'
+import { Refresh, WarningFilled } from '@element-plus/icons-vue'
 import { ProfileLayer } from '@/types/keyMapping'
 
 const appStore = useAppStore()
 const keyMappingStore = useKeyMappingStore()
 const deviceStore = useDeviceStore()
-const { sendReport } = useWebHID()
 const profileLayers = PROFILE_LAYERS
-
-const protocol = new HIDProtocol(sendReport)
-const configService = new ConfigFileService()
 
 // ProfileLayer 枚举 → keyMapping store 的 ProfileKey 映射
 const profileLayerToKey: Record<ProfileLayer, string> = {
@@ -97,77 +78,58 @@ async function handleProfileChange(key: ProfileLayer) {
   }
 }
 
-async function handleImport() {
-  try {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.json,.mcfg'
-    input.onchange = async (e: any) => {
-      const file = e.target.files?.[0]
-      if (!file) return
-      try {
-        const config = await configService.importConfig(file)
-        ElMessage.success('配置文件导入成功')
-      } catch (error: any) {
-        ElMessage.error(error.message || '导入失败')
-      }
-    }
-    input.click()
-  } catch (error: any) {
-    ElMessage.error('导入失败')
-  }
-}
-
-function handleExport() {
-  try {
-    const data = {
-      deviceId: deviceStore.deviceInfo?.serialNumber || '',
-      deviceName: deviceStore.deviceInfo?.productName || '',
-      keyMapping: JSON.parse(JSON.stringify(keyMappingStore.profiles)),
-      macros: [],
-      deviceSettings: {},
-      lighting: {},
-    }
-    configService.exportConfig(data as any)
-    ElMessage.success('配置已导出')
-  } catch (error) {
-    ElMessage.error('导出失败')
-  }
-}
-
 async function handleReset() {
   try {
-    await ElMessageBox.confirm('确定要重置当前配置吗？', '提示', {
+    await ElMessageBox.confirm('确定要恢复主控出厂设置吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning',
     })
-    keyMappingStore.resetProfile()
-    ElMessage.success('已重置')
+    if (!deviceStore.isConnected || !deviceStore.protocol) {
+      ElMessage.warning('请先连接设备')
+      return
+    }
+    appStore.setLoading(true)
+    try {
+      await deviceStore.protocol.restoreFactorySettings()
+      console.log('[BottomBar] 恢复出厂设置成功')
+      ElMessage.success('已恢复出厂设置')
+    } catch (error: any) {
+      console.error('[BottomBar] 恢复出厂设置失败:', error)
+      ElMessage.error('恢复出厂设置失败: ' + error.message)
+    } finally {
+      appStore.setLoading(false)
+    }
   } catch {
     // User cancelled
   }
 }
 
-async function handleApply() {
-  if (!deviceStore.isConnected) {
-    ElMessage.warning('请先连接设备')
-    return
-  }
-
+async function handleRestoreFactory() {
   try {
-    // Save current profile to device
-    await protocol.saveProfile()
-    keyMappingStore.markAsSaved()
-    ElMessage.success('配置已应用到设备')
-  } catch (error: any) {
-    ElMessage.error(error.message || '应用失败')
+    await ElMessageBox.confirm('确定要复位MCU按键设置吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    if (!deviceStore.isConnected || !deviceStore.protocol) {
+      ElMessage.warning('请先连接设备')
+      return
+    }
+    appStore.setLoading(true)
+    try {
+      const data = await deviceStore.protocol.resetKeyMappings(ProfileLayer.DEFAULT)
+      console.log('[BottomBar] 复位成功, 返回数据:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
+      ElMessage.success('MCU已复位')
+    } catch (error: any) {
+      console.error('[BottomBar] 复位失败:', error)
+      ElMessage.error('复位失败: ' + error.message)
+    } finally {
+      appStore.setLoading(false)
+    }
+  } catch {
+    // User cancelled
   }
-}
-
-function handleCancel() {
-  keyMappingStore.resetProfile()
-  ElMessage.info('已取消更改')
 }
 </script>
 

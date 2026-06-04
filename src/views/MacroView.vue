@@ -143,7 +143,7 @@
     <el-dialog
       v-model="keyPickerVisible"
       title="选择按键"
-      width="580px"
+      width="720px"
       :close-on-click-modal="false"
       class="key-picker-dialog"
     >
