@@ -60,40 +60,28 @@ function handleTabClick(tab: typeof NAV_TABS[0]) {
 .top-bar {
   display: flex;
   align-items: center;
-  height: 56px;
+  justify-content: space-between;
   padding: 0 24px;
-  background: $bg-panel;
-  border-bottom: 2px solid $accent-blue;
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, $accent-blue, transparent);
-    box-shadow: 0 0 10px $accent-blue;
-  }
+  height: 56px;
+  background: transparent;
+  margin-top: 20px;
 }
 
 .logo-section {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 200px;
 }
 
 .logo-icon {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
 }
 
 .logo-text {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
   background: linear-gradient(90deg, $accent-blue, $accent-cyan);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -103,43 +91,31 @@ function handleTabClick(tab: typeof NAV_TABS[0]) {
 .nav-tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
   flex: 1;
   justify-content: center;
 }
 
 .nav-tab {
-  padding: 0 24px;
-  height: 40px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: $radius-sm;
-  color: $text-secondary;
-  font-size: 14px;
+  padding: 12px 26px;
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
+  transition: all 0.3s;
+  color: #8A98B3;
+  font-size: 14px;
 
-  &:hover {
-    color: $text-primary;
-    background: rgba(0, 212, 255, 0.05);
+  &:hover:not(.active) {
+    border-color: #00E5FF;
+    color: #E6EDF7;
   }
 
   &.active {
-    color: $accent-blue;
-    background: rgba(0, 212, 255, 0.1);
-    border-color: rgba(0, 212, 255, 0.3);
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 20%;
-      right: 20%;
-      height: 2px;
-      background: $accent-blue;
-      box-shadow: 0 0 8px $accent-blue;
-    }
+    background: linear-gradient(90deg,#007899,#00C9E6);
+    color: #fff;
+    box-shadow: 0 0 12px rgba(0,229,255,0.4);
+    border-color: #00E5FF;
   }
 }
 
@@ -147,20 +123,18 @@ function handleTabClick(tab: typeof NAV_TABS[0]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 60px;
-  height: 32px;
-  margin-left: 16px;
-  background: rgba(15, 52, 96, 0.5);
-  border: 1px solid $border-color;
-  border-radius: $radius-sm;
-  color: $text-secondary;
-  font-size: 12px;
+  padding: 6px 12px;
+  margin-left: 14px;
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 4px;
+  color: #E6EDF7;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
 
   &:hover {
-    border-color: $accent-blue;
-    color: $accent-blue;
+    border-color: #00E5FF;
   }
 }
 </style>

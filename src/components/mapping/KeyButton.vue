@@ -1,20 +1,23 @@
 <template>
-  <div class="key-button" @click="$emit('click')">
-    <div class="key-button-id">{{ button.id }}</div>
-    <div class="key-button-content">
-      <div class="key-button-mapping">{{ (mapping?.target as any)?.label || '未设置' }}</div>
-      <div class="key-button-sub" v-if="mapping">{{ getSubLabel(mapping) }}</div>
+  <div class="key-row" @click="$emit('click')">
+    <div class="key-name-wrap">
+      <span class="key-tag">{{ button.id }}</span>
+      <div>
+        <div>{{ displayLabel }}</div>
+        <div class="key-desc">{{ displayDesc }}</div>
+      </div>
     </div>
-    <div class="key-button-arrow">›</div>
+    <button class="config-btn" @click.stop="$emit('click')">配置 &gt;</button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
 import type { KeyMapping } from '@/types/keyMapping'
 
-defineProps<{
+const props = defineProps<{
   button: MouseButton
   mapping?: KeyMapping
 }>()
@@ -23,87 +26,100 @@ defineEmits<{
   click: []
 }>()
 
-function getSubLabel(mapping: KeyMapping): string {
-  const label = (mapping.target as any)?.label || ''
-  switch (mapping.type) {
+const displayLabel = computed(() => {
+  if (!props.mapping) return props.button.label
+  const target = props.mapping.target as any
+  const label = target?.label || ''
+  if (props.mapping.type === KeyType.COMBO) return label || '组合快捷键'
+  if (props.mapping.type === KeyType.MACRO) return label || '宏录制'
+  if (props.mapping.type === KeyType.KEY) return label || '按键'
+  if (props.mapping.type === KeyType.MOUSE_FUNC) return label || '鼠标功能'
+  return label || '未设置'
+})
+
+const displayDesc = computed(() => {
+  if (!props.mapping) return ''
+  const target = props.mapping.target as any
+  const label = target?.label || ''
+  switch (props.mapping.type) {
     case KeyType.MOUSE_FUNC:
-      return '鼠标' + label
+      return `鼠标${label}功能`
     case KeyType.KEY:
-      return '按键' + label
+      return `按键: ${label}`
     case KeyType.MACRO:
-      return '宏录制' + label
+      return `宏录制: ${label}`
     case KeyType.COMBO:
-      return '组合' + label
+      return `组合快捷键`
     default:
       return ''
   }
-}
+})
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
-
-.key-button {
+.key-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px;
-  background: linear-gradient(135deg, rgba(15, 52, 96, 0.6), rgba(15, 52, 96, 0.3));
-  border: 1px solid $border-color;
-  border-left: 3px solid $accent-blue;
-  border-radius: $radius-sm;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: 0.3s;
+
+  &:last-child {
+    border: none;
+  }
 
   &:hover {
-    border-color: $accent-blue;
-    background: linear-gradient(135deg, rgba(15, 52, 96, 0.8), rgba(15, 52, 96, 0.5));
-    box-shadow: $glow-blue;
+    .config-btn {
+      background: #00E5FF;
+      color: #0C0E16;
+      box-shadow: 0 0 6px #00E5FF66;
+    }
   }
 }
 
-.key-button-id {
+.key-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.key-tag {
+  width: 26px;
+  height: 26px;
+  background: #00B4E8;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: linear-gradient(135deg, $accent-blue, rgba(0, 212, 255, 0.7));
-  border-radius: $radius-sm;
   color: #fff;
+  font-weight: bold;
   font-size: 13px;
-  font-weight: 700;
   flex-shrink: 0;
 }
 
-.key-button-content {
-  flex: 1;
-  min-width: 0;
+.key-desc {
+  font-size: 12px;
+  color: #8A98B3;
+  margin-top: 3px;
 }
 
-.key-button-label {
-  font-size: 14px;
-  color: $text-primary;
-  font-weight: 500;
-}
-
-.key-button-mapping {
-  font-size: 14px;
-  color: $text-primary;
-  font-weight: 600;
-}
-
-.key-button-sub {
-  font-size: 11px;
-  color: #2ed573;
-  margin-top: 1px;
-}
-
-.key-button-arrow {
-  font-size: 20px;
-  color: $text-muted;
+.config-btn {
+  border: 1px solid #00E5FF;
+  color: #00E5FF;
+  background: transparent;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.25s;
+  font-size: 13px;
   flex-shrink: 0;
+
+  &:hover {
+    background: #00E5FF;
+    color: #0C0E16;
+    box-shadow: 0 0 6px #00E5FF66;
+  }
 }
 </style>

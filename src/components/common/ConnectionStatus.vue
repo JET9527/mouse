@@ -1,14 +1,14 @@
 <template>
   <div class="connection-status">
-    <div class="status-indicator" :class="{ connected: deviceStore.isConnected }">
-      <span class="status-dot"></span>
-      <span class="status-text">
-        {{ deviceStore.isConnected ? deviceStore.deviceInfo?.productName : '未连接' }}
-      </span>
-    </div>
+    <span
+      class="status-pill"
+      :class="{ connected: deviceStore.isConnected }"
+    >
+      {{ deviceStore.isConnected ? deviceStore.deviceInfo?.productName : '未连接' }}
+    </span>
     <button
       v-if="!deviceStore.isConnected"
-      class="gaming-btn btn-sm"
+      class="connect-btn"
       :loading="isConnecting"
       @click="handleConnect"
     >
@@ -16,7 +16,7 @@
     </button>
     <button
       v-else
-      class="gaming-btn btn-sm btn-danger"
+      class="disconnect-btn"
       @click="handleDisconnect"
     >
       断开
@@ -208,47 +208,52 @@ async function handleDisconnect() {
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  background: rgba(15, 52, 96, 0.5);
-  border: 1px solid $border-color;
-  border-radius: $radius-sm;
+.status-pill {
+  padding: 6px 14px;
+  background: #FF3355;
+  color: #fff;
+  border-radius: 20px;
+  font-size: 13px;
+  white-space: nowrap;
 
   &.connected {
-    border-color: $success-color;
+    background: #39FF77;
+    color: #000;
   }
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: $text-muted;
-
-  .connected & {
-    background: $success-color;
-    box-shadow: 0 0 6px $success-color;
-    animation: pulse 2s infinite;
-  }
-}
-
-.status-text {
-  font-size: 12px;
-  color: $text-secondary;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.connect-btn {
+  padding: 6px 12px;
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 4px;
+  color: #E6EDF7;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
   white-space: nowrap;
+
+  &:hover {
+    border-color: #00E5FF;
+  }
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.disconnect-btn {
+  padding: 6px 14px;
+  background: #FF3355;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+
+  &:hover {
+    box-shadow: 0 0 8px #FF335566;
+  }
 }
 </style>

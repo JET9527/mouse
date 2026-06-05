@@ -16,6 +16,22 @@ html, body, #app {
 
 body {
   overflow: hidden;
+  background-image: radial-gradient(rgba(0,229,255,0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+// 顶部流光条
+top-light {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg,transparent,#00E5FF,#39FF77,#FF3355,transparent);
+  animation: topLightFlow 4s linear infinite;
+  border-radius: 3px;
+}
+@keyframes topLightFlow {
+  0%{background-position:-1400px 0}
+  100%{background-position:1400px 0}
 }
 
 // Scrollbar
@@ -44,9 +60,9 @@ body {
   justify-content: center;
   padding: 0 20px;
   height: $btn-height-md;
-  background: linear-gradient(180deg, rgba(0,212,255,0.15) 0%, rgba(0,212,255,0.05) 100%);
+  background: transparent;
   border: 1px solid $accent-blue;
-  border-radius: $radius-sm;
+  border-radius: 6px;
   color: $accent-blue;
   font-size: 14px;
   cursor: pointer;
@@ -54,7 +70,8 @@ body {
   white-space: nowrap;
 
   &:hover {
-    background: linear-gradient(180deg, rgba(0,212,255,0.3) 0%, rgba(0,212,255,0.1) 100%);
+    background: $accent-blue;
+    color: #0C0E16;
     box-shadow: $glow-blue;
   }
 
@@ -63,7 +80,8 @@ body {
   }
 
   &.active {
-    background: linear-gradient(180deg, rgba(0,212,255,0.4) 0%, rgba(0,212,255,0.2) 100%);
+    background: $accent-blue;
+    color: #0C0E16;
     box-shadow: $glow-blue;
   }
 
@@ -82,13 +100,19 @@ body {
   &.btn-danger {
     border-color: $danger-color;
     color: $danger-color;
-    background: linear-gradient(180deg, rgba(255,71,87,0.15) 0%, rgba(255,71,87,0.05) 100%);
+    background: transparent;
+  
+    &:hover {
+      background: $danger-color;
+      color: #fff;
+      box-shadow: 0 0 8px #FF335566;
+    }
   }
 
   &.btn-success {
     border-color: $success-color;
     color: $success-color;
-    background: linear-gradient(180deg, rgba(46,213,115,0.15) 0%, rgba(46,213,115,0.05) 100%);
+    background: transparent;
   }
 }
 
@@ -96,8 +120,9 @@ body {
 .gaming-panel {
   background: $bg-card;
   border: 1px solid $border-color;
-  border-radius: $radius-md;
-  padding: 16px;
+  border-radius: 10px;
+  padding: 22px;
+  box-shadow: 0 0 14px rgba(0,229,255,0.15);
 }
 
 // Input overrides
@@ -106,7 +131,7 @@ input[type="text"],
 select {
   background: $bg-secondary;
   border: 1px solid $border-color;
-  border-radius: $radius-sm;
+  border-radius: 4px;
   color: $text-primary;
   padding: 6px 10px;
   font-size: 14px;

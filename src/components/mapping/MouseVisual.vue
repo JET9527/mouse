@@ -1,56 +1,44 @@
 <template>
   <div class="mouse-visual">
-    <svg viewBox="0 0 200 340" class="mouse-svg" xmlns="http://www.w3.org/2000/svg">
-      <!-- Mouse body outline -->
-      <defs>
-        <linearGradient id="mouseBody" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#2a2a4a;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#1a1a2e;stop-opacity:1" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-      </defs>
+    <div class="mouse-svg-wrap">
+      <svg class="game-mouse" viewBox="0 0 200 300" width="200" height="300">
+        <defs>
+          <linearGradient id="mouseLine" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#00E5FF"/>
+            <stop offset="100%" stop-color="#39FF77"/>
+          </linearGradient>
+          <linearGradient id="mouseFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#192233"/>
+            <stop offset="100%" stop-color="#0F1522"/>
+          </linearGradient>
+        </defs>
+        <!--鼠标主体外壳-->
+        <path d="M50,30 C20,80 10,180 40,250 C70,280 130,280 160,250 C190,180 180,80 150,30 C130,10 70,10 50,30Z" fill="url(#mouseFill)" stroke="url(#mouseLine)" stroke-width="2.5"/>
+        <!--左键槽-->
+        <path d="M52,33 C55,65 80,72 98,72 L98,35 C82,28 60,30 52,33Z" fill="#111722" stroke="#00E5FF" stroke-width="1.5"/>
+        <!--右键槽-->
+        <path d="M148,33 C145,65 120,72 102,72 L102,35 C118,28 140,30 148,33Z" fill="#111722" stroke="#00E5FF" stroke-width="1.5"/>
+        <!--滚轮仓-->
+        <ellipse cx="100" cy="82" rx="18" ry="12" fill="#0c1018" stroke="url(#mouseLine)" stroke-width="2"/>
+        <!--左侧两个侧键凹槽-->
+        <rect x="32" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+        <rect x="32" y="164" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+        <!--右侧侧键凹槽-->
+        <rect x="156" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+        <!--尾部电竞纹理线条-->
+        <path d="M65,220 L135,220" stroke="#00E5FF66" stroke-width="1"/>
+        <path d="M70,235 L130,235" stroke="#00E5FF66" stroke-width="1"/>
+      </svg>
 
-      <!-- Main body -->
-      <path d="M100 20 C60 20, 30 60, 30 120 L30 220 C30 280, 50 310, 100 320 C150 310, 170 280, 170 220 L170 120 C170 60, 140 20, 100 20Z"
-            fill="url(#mouseBody)" stroke="#3a3a5a" stroke-width="1.5"/>
-
-      <!-- Left button area -->
-      <path d="M100 25 C65 25, 38 60, 35 120 L35 155 L95 155 L95 25Z"
-            fill="rgba(0,212,255,0.05)" stroke="#3a3a5a" stroke-width="1"/>
-
-      <!-- Right button area -->
-      <path d="M100 25 C135 25, 162 60, 165 120 L165 155 L105 155 L105 25Z"
-            fill="rgba(0,212,255,0.05)" stroke="#3a3a5a" stroke-width="1"/>
-
-      <!-- Scroll wheel -->
-      <rect x="92" y="70" width="16" height="30" rx="8" fill="#1a1a2e" stroke="#3a3a5a" stroke-width="1"/>
-      <rect x="95" y="75" width="10" height="20" rx="5" fill="#2a2a4a" stroke="#4a4a6a" stroke-width="0.5"/>
-
-      <!-- Side buttons (left side) -->
-      <rect x="22" y="100" width="12" height="24" rx="4" fill="#1a1a2e" stroke="#3a3a5a" stroke-width="1"/>
-      <rect x="22" y="130" width="12" height="24" rx="4" fill="#1a1a2e" stroke="#3a3a5a" stroke-width="1"/>
-
-      <!-- DPI button area -->
-      <circle cx="100" cy="55" r="6" fill="#1a1a2e" stroke="#3a3a5a" stroke-width="1"/>
-
-      <!-- RGB light strip (bottom) -->
-      <path d="M50 300 C60 310, 80 315, 100 315 C120 315, 140 310, 150 300"
-            fill="none" stroke="#00d4ff" stroke-width="2" filter="url(#glow)" opacity="0.8"/>
-
-      <!-- Brand text -->
-      <text x="100" y="200" text-anchor="middle" fill="#3a3a5a" font-size="12" font-family="Arial">MOUSE</text>
-    </svg>
-
-    <!-- Button number indicators -->
-    <div class="button-markers">
-      <div class="marker" :style="getMarkerStyle(btn.id)" v-for="btn in MOUSE_BUTTONS" :key="btn.id">
-        <span class="marker-number">{{ btn.id }}</span>
+      <!--6个点位覆盖在SVG对应按键位置-->
+      <div
+        v-for="btn in MOUSE_BUTTONS"
+        :key="btn.id"
+        class="dot"
+        :class="[`dot${btn.id}`, { active: selectedId === btn.id }]"
+        @click="$emit('select', btn.id)"
+      >
+        {{ btn.id }}
       </div>
     </div>
   </div>
@@ -59,22 +47,16 @@
 <script setup lang="ts">
 import { MOUSE_BUTTONS } from '@/utils/constants'
 
-function getMarkerStyle(buttonId: number) {
-  const positions: Record<number, { top: string; left: string }> = {
-    1: { top: '28%', left: '28%' },
-    2: { top: '28%', left: '68%' },
-    3: { top: '35%', left: '48%' },
-    4: { top: '42%', left: '5%' },
-    5: { top: '55%', left: '5%' },
-    6: { top: '58%', left: '48%' },
-  }
-  return positions[buttonId] || { top: '50%', left: '50%' }
-}
+defineProps<{
+  selectedId?: number
+}>()
+
+defineEmits<{
+  select: [buttonId: number]
+}>()
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
-
 .mouse-visual {
   position: relative;
   display: flex;
@@ -84,41 +66,47 @@ function getMarkerStyle(buttonId: number) {
   height: 100%;
 }
 
-.mouse-svg {
-  width: 160px;
-  height: 280px;
+.mouse-svg-wrap {
+  position: relative;
+  width: 200px;
+  height: 300px;
 }
 
-.button-markers {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+.game-mouse {
+  animation: mouseGlow 3s ease-in-out infinite;
 }
 
-.marker {
-  position: absolute;
-  width: 24px;
-  height: 24px;
+@keyframes mouseGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px #00E5FF); }
+  50% { filter: drop-shadow(0 0 18px #00E5FF); }
+}
+
+.dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #00E5FF;
+  color: #000;
+  font-size: 12px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translate(-50%, -50%);
+  position: absolute;
+  cursor: pointer;
+  transition: 0.3s;
+  z-index: 9;
 
-  .marker-number {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    background: linear-gradient(135deg, $accent-blue, rgba(0, 212, 255, 0.6));
-    border-radius: 50%;
-    color: #fff;
-    font-size: 11px;
-    font-weight: 700;
-    box-shadow: $glow-blue;
+  &.active {
+    transform: scale(1.15);
+    box-shadow: 0 0 10px #00E5FF, 0 0 20px #00E5FF77;
   }
 }
+
+.dot1 { top: 32px; left: 18px; }
+.dot2 { top: 32px; right: 18px; }
+.dot3 { top: 86px; left: 50%; transform: translateX(-50%); }
+.dot4 { top: 126px; left: 4px; }
+.dot5 { top: 168px; left: 4px; }
+.dot6 { top: 126px; right: 4px; }
 </style>

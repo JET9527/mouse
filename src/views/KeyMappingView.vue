@@ -1,28 +1,39 @@
 <template>
   <div class="key-mapping-view">
-    <div class="mapping-container">
-      <!-- Left button list -->
-      <ButtonList
-        side="left"
-        :mappings="currentMappings"
-        @select="handleButtonSelect"
-      />
-
-      <!-- Mouse visual -->
-      <div class="mouse-area">
-        <MouseVisual />
-        <button class="gaming-btn btn-reset" @click="handleResetMappings" :disabled="!deviceStore.isConnected">
-          复位按键定义
-        </button>
+    <!--主体三栏-->
+    <div class="main-container">
+      <!--左侧按键-->
+      <div class="col-left">
+        <div class="key-card">
+          <ButtonList
+            side="left"
+            :mappings="currentMappings"
+            @select="handleButtonSelect"
+          />
+        </div>
       </div>
 
-      <!-- Right button list -->
-      <ButtonList
-        side="right"
-        :mappings="currentMappings"
-        @select="handleButtonSelect"
-      />
+      <!--中间鼠标预览-->
+      <div class="col-center">
+        <div class="mouse-box">
+          <MouseVisual @select="handleButtonSelect" />
+        </div>
+        <button class="reset-all" @click="handleResetMappings">全部重置按键定义</button>
+      </div>
+
+      <!--右侧按键-->
+      <div class="col-right">
+        <div class="key-card">
+          <ButtonList
+            side="right"
+            :mappings="currentMappings"
+            @select="handleButtonSelect"
+          />
+        </div>
+      </div>
     </div>
+
+
 
     <!-- Key selector dialog -->
     <KeySelector
@@ -45,7 +56,7 @@ import { useKeyMappingStore } from '@/stores/modules/keyMapping'
 import { useDeviceStore } from '@/stores/modules/device'
 import { ProfileLayer, KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
-import { MOUSE_BUTTONS } from '@/utils/constants'
+import { MOUSE_BUTTONS, PROFILE_LAYERS } from '@/utils/constants'
 
 const keyMappingStore = useKeyMappingStore()
 const deviceStore = useDeviceStore()
@@ -272,6 +283,14 @@ function handleButtonSelect(buttonId: number) {
   }
 }
 
+// 切换 Profile 模式
+function handleProfileSwitch(layer: import('@/types/keyMapping').ProfileLayer) {
+  const key = profileLayerToKey[layer]
+  if (key) {
+    keyMappingStore.setProfile(key)
+  }
+}
+
 // 切换到组合键tab时获取设备组合快捷键数据
 function handleComboTabChange() {
   if (!deviceStore.isConnected || !deviceStore.protocol || !selectedButton.value) {
@@ -493,49 +512,76 @@ function buildMappingDataBlock(mappings: Record<number, import('@/types/keyMappi
 .key-mapping-view {
   width: 100%;
   height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow: auto;
+}
+
+.main-container {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+}
+
+.col-left,
+.col-right {
+  width: 30%;
+}
+
+.col-center {
+  width: 40%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  gap: 20px;
 }
 
-.btn-reset {
-  font-size: 12px;
-  padding: 6px 14px;
-  margin-top: 16px;
-  background: rgba(255, 77, 77, 0.15);
-  border: 1px solid rgba(255, 77, 77, 0.4);
-  color: $text-primary;
-  border-radius: $radius-sm;
+.key-card {
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.25);
+  border-radius: 8px;
+  padding: 6px 18px;
+  margin-bottom: 14px;
+  transition: 0.3s;
+
+  &:hover {
+    background: #22283A;
+    box-shadow: 0 0 8px rgba(0,229,255,0.15);
+  }
+}
+
+.mouse-box {
+  width: 320px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 12px;
+  box-shadow: 0 0 14px #00E5FF40;
+}
+
+
+
+.reset-all {
+  border: 1px solid #FF3355;
+  color: #FF3355;
+  background: transparent;
+  padding: 9px 22px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: 0.3s;
+  font-size: 14px;
+  margin-top: 20px;
 
-  &:hover:not(:disabled) {
-    background: rgba(255, 77, 77, 0.3);
-    border-color: rgba(255, 77, 77, 0.7);
+  &:hover {
+    background: #FF3355;
+    color: #fff;
+    box-shadow: 0 0 8px #FF335566;
   }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-}
-
-.mapping-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 40px;
-  width: 100%;
-  max-width: 900px;
-}
-
-.mouse-area {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 </style>

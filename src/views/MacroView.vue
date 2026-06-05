@@ -1,141 +1,117 @@
 <template>
   <div class="macro-view">
-    <div class="macro-container">
-      <!-- Macro step editor -->
-      <div class="macro-panel">
-        <!-- Macro selector -->
-        <div class="macro-selector">
-          <div class="macro-buttons">
-            <button
-              v-for="i in MACRO_COUNT"
-              :key="i - 1"
-              class="macro-btn"
-              :class="{ active: macroSelectIndex === i - 1, hasData: macroData[i - 1].length > 0 }"
-              @click="switchMacro(i - 1)"
-            >
-              M{{ i - 1 }}
-            </button>
-          </div>
-        </div>
+    <!--宏编辑主卡片【全屏宽】-->
+    <div class="macro-card">
+      <!--M0~M14槽位-->
+      <div class="macro-tab-bar">
+        <button
+          v-for="i in MACRO_COUNT"
+          :key="i - 1"
+          class="macro-slot"
+          :class="{ active: macroSelectIndex === i - 1, hasData: macroData[i - 1].length > 0 }"
+          @click="switchMacro(i - 1)"
+        >
+          M{{ i - 1 }}
+        </button>
+      </div>
 
-        <div class="panel-header">
-          <h3>编辑宏动作</h3>
-          <div class="header-info">
-            <span class="step-count">剩余内存</span>
-            <span class="byte-count" :class="{ 'byte-over': totalBytes > MAX_MACRO_BYTES }">
-              {{ totalBytes }} / {{ MAX_MACRO_BYTES }} B
-            </span>
-          </div>
-        </div>
+      <!--标题+剩余内存-->
+      <div class="macro-head-row">
+        <div class="macro-title">编辑宏动作</div>
+        <div class="mem-info">剩余内存：{{ totalBytes }} / {{ MAX_MACRO_BYTES }} B</div>
+      </div>
 
-        <!-- Step list -->
-        <div class="step-list">
-          <div class="step-row" v-for="(step, index) in steps" :key="step.id">
-            <span class="step-index">{{ index + 1 }}</span>
+      <!--动作条目列表-->
+      <div class="action-list">
+        <div class="action-item" v-for="(step, index) in steps" :key="step.id">
+          <span class="action-index">{{ index + 1 }}</span>
 
-            <!-- Action type dropdown -->
-            <select class="step-action" v-model="step.action" @change="onActionChange(step)">
-              <option value="press">按下</option>
-              <option value="click">点击</option>
-              <option value="release">抬起</option>
-              <option value="text">文本</option>
-              <option value="delay">延时</option>
-            </select>
+          <!-- 动作类型下拉 -->
+          <select class="sel-action-type" v-model="step.action" @change="onActionChange(step)">
+            <option value="press">按下</option>
+            <option value="click">点击</option>
+            <option value="release">抬起</option>
+            <option value="text">文本</option>
+            <option value="delay">延时</option>
+          </select>
 
-            <!-- Parameter input -->
-            <div class="step-param">
-              <!-- 按下/点击/抬起 - multi key selector -->
-              <div v-if="step.action === 'press' || step.action === 'click' || step.action === 'release'" class="param-multi-keys">
-                <div class="key-tags">
-                  <span
-                    v-for="(k, ki) in step.keys"
-                    :key="ki"
-                    class="key-tag"
-                    @click="editKeyIndex = ki; openKeyPicker(index)"
-                  >
-                    {{ k.label }}
-                    <span class="key-tag-remove" @click.stop="removeKey(index, ki)">✕</span>
-                  </span>
-                </div>
-                <button class="key-add-btn" @click="editKeyIndex = -1; openKeyPicker(index)">
-                  + 添加按键
-                </button>
-                <div v-if="step.keys.length === 0" class="key-empty-hint">
-                  尚未添加按键
-                </div>
+          <!-- 参数输入 -->
+          <div class="step-param">
+            <!-- 按下/点击/抬起 -->
+            <div v-if="step.action === 'press' || step.action === 'click' || step.action === 'release'" class="param-multi-keys">
+              <span
+                v-for="(k, ki) in step.keys"
+                :key="ki"
+                class="key-tag-item"
+                @click="editKeyIndex = ki; openKeyPicker(index)"
+              >
+                {{ k.label }}
+                <span class="key-tag-remove" @click.stop="removeKey(index, ki)">✕</span>
+              </span>
+              <span class="add-key-text" @click="editKeyIndex = -1; openKeyPicker(index)">+添加按键</span>
+              <div v-if="step.keys.length === 0" class="key-empty-hint">尚未添加按键</div>
+            </div>
+            <!-- 文本 -->
+            <input
+              v-else-if="step.action === 'text'"
+              v-model="step.text"
+              class="param-input"
+              type="text"
+              placeholder="输入文本内容..."
+            />
+            <!-- 延时 -->
+            <div v-else-if="step.action === 'delay'" class="param-delay">
+              <div class="delay-header">
+                <span class="delay-label">{{ step.delayRandom ? '随机延时' : '固定延时' }}</span>
+                <label class="delay-toggle">
+                  <span class="toggle-text">随机</span>
+                  <input type="checkbox" v-model="step.delayRandom" />
+                  <span class="toggle-slider"></span>
+                </label>
               </div>
-              <!-- 文本 - text input -->
-              <input
-                v-else-if="step.action === 'text'"
-                v-model="step.text"
-                class="param-input"
-                type="text"
-                placeholder="输入文本内容..."
-              />
-              <!-- 延时 -->
-              <div v-else-if="step.action === 'delay'" class="param-delay">
-                <div class="delay-header">
-                  <span class="delay-label">{{ step.delayRandom ? '随机延时' : '固定延时' }}</span>
-                  <label class="delay-toggle">
-                    <span class="toggle-text">随机</span>
-                    <input type="checkbox" v-model="step.delayRandom" />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-                <div v-if="!step.delayRandom" class="delay-fixed">
-                  <input
-                    v-model="step.duration"
-                    class="param-input delay-input"
-                    type="number"
-                    min="0"
-                    placeholder="500"
-                  />
-                  <span class="delay-unit">ms</span>
-                </div>
-                <div v-else class="delay-random">
-                  <input
-                    v-model="step.delayMin"
-                    class="param-input delay-input"
-                    type="number"
-                    min="0"
-                    placeholder="最小"
-                  />
-                  <span class="delay-sep">~</span>
-                  <input
-                    v-model="step.delayMax"
-                    class="param-input delay-input"
-                    type="number"
-                    min="0"
-                    placeholder="最大"
-                  />
-                  <span class="delay-unit">ms</span>
-                </div>
+              <div v-if="!step.delayRandom" class="delay-fixed">
+                <input
+                  v-model="step.duration"
+                  class="param-input delay-input"
+                  type="number"
+                  min="0"
+                  placeholder="500"
+                />
+                <span class="delay-unit">ms</span>
+              </div>
+              <div v-else class="delay-random">
+                <input
+                  v-model="step.delayMin"
+                  class="param-input delay-input"
+                  type="number"
+                  min="0"
+                  placeholder="最小"
+                />
+                <span class="delay-sep">~</span>
+                <input
+                  v-model="step.delayMax"
+                  class="param-input delay-input"
+                  type="number"
+                  min="0"
+                  placeholder="最大"
+                />
+                <span class="delay-unit">ms</span>
               </div>
             </div>
-
-            <!-- Byte count & Delete button -->
-            <div class="step-actions">
-              <span class="step-bytes" :class="{ 'byte-over': totalBytes > MAX_MACRO_BYTES }">{{ calcStepBytes(step) }}B</span>
-              <button class="step-delete" @click="removeStep(index)">✕</button>
-            </div>
           </div>
 
-          <div class="empty-hint" v-if="steps.length === 0">
-            暂无步骤，点击下方添加动作
-          </div>
+          <!-- 占用字节 & 删除 -->
+          <span class="byte-desc" :class="{ 'byte-over': totalBytes > MAX_MACRO_BYTES }">{{ calcStepBytes(step) }}B</span>
+          <span class="del-action" @click="removeStep(index)">×</span>
         </div>
 
-        <!-- Toolbar -->
-        <div class="step-toolbar">
-          <button class="gaming-btn" @click="addStep">
-            + 添加动作
-          </button>
-          <div class="toolbar-right">
-            <button class="gaming-btn btn-success" :disabled="steps.length === 0 || totalBytes > MAX_MACRO_BYTES || !deviceStore.isConnected" @click="saveToDevice">
-              保存到设备
-            </button>
-          </div>
-        </div>
+        <div class="empty-hint" v-if="steps.length === 0">暂无步骤，点击下方添加动作</div>
+      </div>
+
+      <!--底部按钮栏-->
+      <div class="macro-bottom-bar">
+        <button class="add-action-btn" @click="addStep">+ 添加动作</button>
+        <button class="save-macro-btn" :disabled="steps.length === 0 || totalBytes > MAX_MACRO_BYTES || !deviceStore.isConnected" @click="saveToDevice">保存到设备</button>
       </div>
     </div>
 
@@ -159,6 +135,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import KeyCodeSelector from '@/components/mapping/KeyCodeSelector.vue'
 import { useDeviceStore } from '@/stores/modules/device'
+import { useKeyMappingStore } from '@/stores/modules/keyMapping'
 import { ElMessage } from 'element-plus'
 import { parseMacroData, serializeMacroData, MAX_MACRO_BYTES } from '@/utils/macroProtocol'
 
@@ -382,236 +359,136 @@ async function saveToDevice() {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
-
 .macro-view {
   width: 100%;
   height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 24px;
   overflow: auto;
 }
 
-.macro-container {
-  max-width: 1000px;
-  margin: 0 auto;
+.macro-card {
+  width: 100%;
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 10px;
+  padding: 26px;
+  box-shadow: 0 0 14px rgba(0,229,255,0.15);
 }
 
-.macro-panel {
-  background: $bg-card;
-  border: 1px solid $border-color;
-  border-radius: $radius-md;
-  padding: 20px;
-}
-
-.panel-header {
+/* M0~M14槽位标签栏 */
+.macro-tab-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-
-  h3 {
-    font-size: 16px;
-    color: $text-primary;
-  }
+  gap: 6px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
 }
 
-.header-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+.macro-slot {
+  width: 56px;
+  height: 38px;
+  line-height: 38px;
+  text-align: center;
+  background: #22283A;
+  border: 1px solid rgba(0,229,255,0.25);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.25s;
+  color: #8A98B3;
 
-.step-count {
-  font-size: 13px;
-  color: $text-muted;
-}
-
-.byte-count {
-  font-size: 12px;
-  color: $text-muted;
-  font-family: monospace;
-  padding: 2px 8px;
-  background: $bg-secondary;
-  border-radius: $radius-sm;
-
-  &.byte-over {
+  &.active {
+    background: linear-gradient(90deg,#007899,#00C9E6);
     color: #fff;
-    background: $danger-color;
-  }
-}
-
-
-/* Macro selector */
-.macro-selector {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid $border-color;
-
-  .selector-label {
-    font-size: 13px;
-    color: $text-secondary;
-    white-space: nowrap;
+    border-color: #00E5FF;
+    box-shadow: 0 0 6px #00E5FF60;
   }
 
-  .macro-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+  &:hover:not(.active) {
+    border-color: #00E5FF;
+    color: #E6EDF7;
   }
 
-  .macro-btn {
-    width: 48px;
-    height: 30px;
-    border: 1px solid $border-color;
-    border-radius: $radius-sm;
-    background: $bg-card;
-    color: $text-secondary;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-      border-color: $accent-blue;
-      color: $accent-blue;
-    }
+  &.hasData {
+    border-color: #39FF77;
+    color: #39FF77;
 
     &.active {
-      background: $accent-blue;
+      background: linear-gradient(90deg,#007899,#00C9E6);
       color: #fff;
-      border-color: $accent-blue;
-    }
-
-    &.hasData {
-      border-color: #52c41a;
-      color: #52c41a;
-
-      &.active {
-        background: $accent-blue;
-        color: #fff;
-        border-color: $accent-blue;
-      }
+      border-color: #00E5FF;
     }
   }
 }
 
-/* Step list */
-.step-list {
+/* 编辑动作头部 */
+.macro-head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.macro-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #E6EDF7;
+}
+
+.mem-info {
+  font-size: 13px;
+  color: #8A98B3;
+}
+
+/* 动作条目列表 */
+.action-list {
   min-height: 200px;
   max-height: 400px;
   overflow-y: auto;
 }
 
-.step-row {
+.action-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  background: $bg-secondary;
-  border: 1px solid $border-color;
-  border-radius: $radius-sm;
-  margin-bottom: 6px;
+  gap: 14px;
+  background: #22283A;
+  border: 1px solid rgba(0,229,255,0.18);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
 
-  .step-index {
-    width: 24px;
-    text-align: center;
-    color: $text-muted;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .step-action {
-    width: 80px;
-    padding: 6px 4px;
-    background: $bg-card;
-    border: 1px solid $border-color;
-    border-radius: $radius-sm;
-    color: $text-primary;
+  .action-index {
+    color: #8A98B3;
+    min-width: 26px;
     font-size: 13px;
-    cursor: pointer;
-    outline: none;
-
-    &:focus {
-      border-color: $accent-blue;
-    }
-  }
-
-  .step-param {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .step-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .step-bytes {
-    font-size: 11px;
-    color: $text-muted;
-    font-family: monospace;
-    white-space: nowrap;
-
-    &.byte-over {
-      color: $danger-color;
-    }
-  }
-
-  .step-delete {
-    width: 28px;
-    height: 28px;
-    border: 1px solid transparent;
-    border-radius: $radius-sm;
-    background: transparent;
-    color: $text-muted;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-      border-color: $danger-color;
-      color: $danger-color;
-      background: rgba(255, 77, 77, 0.1);
-    }
   }
 }
 
-/* Multi-key selector */
-.param-multi-keys {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-height: 32px;
+/* 下拉选择框 */
+.sel-action-type {
+  background: #0C0E16;
+  color: #E6EDF7;
+  border: 1px solid rgba(0,229,255,0.35);
+  padding: 6px 10px;
+  border-radius: 4px;
+  outline: none;
+  min-width: 110px;
+  font-size: 13px;
+  cursor: pointer;
 }
 
-.key-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.key-tag {
+/* 按键标签 */
+.key-tag-item {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
-  background: $accent-blue;
-  color: #fff;
-  font-size: 12px;
-  border-radius: $radius-sm;
+  background: #00E5FF;
+  color: #000;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: darken($accent-blue, 10%);
-  }
 
   .key-tag-remove {
     font-size: 10px;
@@ -625,46 +502,123 @@ async function saveToDevice() {
   }
 }
 
-.key-add-btn {
-  padding: 3px 10px;
-  background: transparent;
-  border: 1px dashed $border-color;
-  border-radius: $radius-sm;
-  color: $text-secondary;
-  font-size: 12px;
+.add-key-text {
+  color: #00E5FF;
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.byte-desc {
+  margin-left: auto;
+  color: #8A98B3;
+  font-size: 13px;
+  font-family: monospace;
   white-space: nowrap;
 
-  &:hover {
-    border-color: $accent-blue;
-    color: $accent-blue;
+  &.byte-over {
+    color: #FF3355;
   }
 }
 
+.del-action {
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  color: #FF3355;
+  border: 1px solid #FF335560;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #FF3355;
+    color: #fff;
+  }
+}
+
+/* 底部按钮栏 */
+.macro-bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 28px;
+}
+
+.add-action-btn {
+  padding: 10px 22px;
+  background: transparent;
+  border: 1px solid #00E5FF;
+  color: #00E5FF;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 14px;
+
+  &:hover {
+    background: #00E5FF;
+    color: #0C0E16;
+    box-shadow: 0 0 8px #00E5FF66;
+  }
+}
+
+.save-macro-btn {
+  padding: 10px 22px;
+  background: #39FF77;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 14px;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 0 10px #39FF7770;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+/* 参数输入区 */
+.step-param {
+  flex: 1;
+  min-width: 0;
+}
+
+.param-multi-keys {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+}
+
 .key-empty-hint {
-  color: $text-muted;
+  color: #8A98B3;
   font-size: 12px;
 }
 
-/* Text/delay input */
 .param-input {
   width: 100%;
   padding: 6px 10px;
-  background: $bg-card;
-  border: 1px solid $border-color;
-  border-radius: $radius-sm;
-  color: $text-primary;
+  background: #0C0E16;
+  border: 1px solid rgba(0,229,255,0.35);
+  border-radius: 4px;
+  color: #E6EDF7;
   font-size: 13px;
   outline: none;
   box-sizing: border-box;
 
   &:focus {
-    border-color: $accent-blue;
+    border-color: #00E5FF;
   }
 
   &::placeholder {
-    color: $text-muted;
+    color: #8A98B3;
   }
 }
 
@@ -686,7 +640,7 @@ async function saveToDevice() {
   justify-content: space-between;
 
   .delay-label {
-    color: $text-secondary;
+    color: #8A98B3;
     font-size: 12px;
   }
 }
@@ -703,14 +657,14 @@ async function saveToDevice() {
   gap: 4px;
 
   .delay-sep {
-    color: $text-secondary;
+    color: #8A98B3;
     font-size: 14px;
     font-weight: 600;
   }
 }
 
 .delay-unit {
-  color: $text-secondary;
+  color: #8A98B3;
   font-size: 13px;
   white-space: nowrap;
 }
@@ -725,7 +679,7 @@ async function saveToDevice() {
 
   .toggle-text {
     font-size: 12px;
-    color: $text-muted;
+    color: #8A98B3;
   }
 
   input {
@@ -735,7 +689,7 @@ async function saveToDevice() {
   .toggle-slider {
     width: 32px;
     height: 18px;
-    background: $border-color;
+    background: #2c3447;
     border-radius: 9px;
     position: relative;
     transition: background 0.2s;
@@ -754,7 +708,7 @@ async function saveToDevice() {
   }
 
   input:checked + .toggle-slider {
-    background: $accent-blue;
+    background: #00E5FF;
 
     &::after {
       transform: translateX(14px);
@@ -762,27 +716,14 @@ async function saveToDevice() {
   }
 }
 
-/* Toolbar */
-.step-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-
-  .toolbar-right {
-    display: flex;
-    gap: 8px;
-  }
-}
-
 .empty-hint {
   text-align: center;
   padding: 40px 20px;
-  color: $text-muted;
+  color: #8A98B3;
   font-size: 14px;
 }
 
-/* Key picker dialog */
+
 .key-picker-dialog {
   :deep(.el-dialog__body) {
     padding: 12px 20px;

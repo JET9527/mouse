@@ -11,17 +11,17 @@
   --el-border-color: #{$border-color};
   --el-border-color-light: #{$border-light};
   --el-fill-color: #{$bg-secondary};
-  --el-fill-color-light: rgba(15, 52, 96, 0.5);
+  --el-fill-color-light: rgba(24, 28, 41, 0.5);
   --el-color-primary: #{$accent-blue};
-  --el-color-primary-light-3: rgba(0, 212, 255, 0.3);
-  --el-color-primary-light-5: rgba(0, 212, 255, 0.5);
-  --el-color-primary-light-7: rgba(0, 212, 255, 0.7);
-  --el-color-primary-light-9: rgba(0, 212, 255, 0.1);
+  --el-color-primary-light-3: rgba(0, 229, 255, 0.3);
+  --el-color-primary-light-5: rgba(0, 229, 255, 0.5);
+  --el-color-primary-light-7: rgba(0, 229, 255, 0.7);
+  --el-color-primary-light-9: rgba(0, 229, 255, 0.1);
   --el-color-primary-dark-2: #00b4d8;
   --el-color-success: #{$success-color};
   --el-color-warning: #{$warning-color};
   --el-color-danger: #{$danger-color};
-  --el-mask-color: rgba(26, 26, 46, 0.8);
+  --el-mask-color: rgba(12, 14, 22, 0.8);
   --el-box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
   --el-box-shadow-light: 0 2px 8px rgba(0, 0, 0, 0.3);
 }

@@ -1,113 +1,83 @@
 <template>
   <div class="lighting-view">
-    <div class="lighting-container">
-      <!-- Left: Mouse preview with lighting -->
-      <div class="preview-panel">
-        <div class="panel-title">灯光预览</div>
-        <div class="mouse-preview">
-          <svg viewBox="0 0 200 340" class="preview-svg">
+    <!-- 主体左右双栏 -->
+    <div class="light-main-wrap">
+      <!-- 左侧预览卡片 -->
+      <div class="preview-card">
+        <div class="preview-title">灯光预览</div>
+        <div class="mouse-preview-box">
+          <svg class="preview-svg" viewBox="0 0 200 300" width="200" height="300">
             <defs>
-              <filter id="rgbGlow">
-                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-              <linearGradient id="ledGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop v-for="(color, i) in previewColors" :key="i"
-                      :offset="(i / (previewColors.length - 1 || 1)) * 100 + '%'"
-                      :style="{ stopColor: `rgb(${color.r},${color.g},${color.b})` }" />
+              <linearGradient id="mouseLine" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#00E5FF"/>
+                <stop offset="100%" stop-color="#39FF77"/>
               </linearGradient>
-              <filter id="ledGlow">
-                <feGaussianBlur stdDeviation="2" result="blur"/>
-                <feMerge>
-                  <feMergeNode in="blur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
+              <linearGradient id="mouseFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#192233"/>
+                <stop offset="100%" stop-color="#0F1522"/>
+              </linearGradient>
             </defs>
-
-            <!-- Mouse body -->
-            <path d="M100 20 C60 20, 30 60, 30 120 L30 220 C30 280, 50 310, 100 320 C150 310, 170 280, 170 220 L170 120 C170 60, 140 20, 100 20Z"
-                  fill="#1a1a2e" stroke="#3a3a5a" stroke-width="1.5"/>
-
-            <!-- RGB light strip with device colors -->
-            <path d="M50 300 C60 310, 80 315, 100 315 C120 315, 140 310, 150 300"
-                  stroke="url(#ledGradient)"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                  filter="url(#rgbGlow)"
-                  :opacity="config.brightness / 5"
-                  class="rgb-strip"/>
-
-            <!-- LED indicator dots -->
+            <path d="M50,30 C20,80 10,180 40,250 C70,280 130,280 160,250 C190,180 180,80 150,30 C130,10 70,10 50,30Z" fill="url(#mouseFill)" stroke="url(#mouseLine)" stroke-width="2.5"/>
+            <path d="M52,33 C55,65 80,72 98,72 L98,35 C82,28 60,30 52,33Z" fill="#111722" stroke="#00E5FF" stroke-width="1.5"/>
+            <path d="M148,33 C145,65 120,72 102,72 L102,35 C118,28 140,30 148,33Z" fill="#111722" stroke="#00E5FF" stroke-width="1.5"/>
+            <ellipse cx="100" cy="82" rx="18" ry="12" fill="#0c1018" stroke="url(#mouseLine)" stroke-width="2"/>
+            <rect x="32" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+            <rect x="32" y="164" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+            <rect x="156" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+            <path d="M65,220 L135,220" stroke="#00E5FF66" stroke-width="1"/>
+            <path d="M70,235 L130,235" stroke="#00E5FF66" stroke-width="1"/>
+            <!-- 8颗LED点位 -->
             <circle v-for="(color, i) in previewColors" :key="'led'+i"
-                    :cx="ledPositions[i].x" :cy="ledPositions[i].y"
-                    r="5"
-                    :fill="`rgb(${color.r},${color.g},${color.b})`"
-                    :opacity="config.brightness / 5"
-                    filter="url(#ledGlow)" />
+              :cx="ledDotPositions[i].x" :cy="ledDotPositions[i].y"
+              r="3.5"
+              :fill="`rgb(${color.r},${color.g},${color.b})`"
+              :opacity="config.brightness > 0 ? 0.9 : 0.15" />
           </svg>
         </div>
       </div>
 
-      <!-- Right: Controls -->
-      <div class="controls-panel">
-        <!-- Effect selection -->
-        <div class="control-section">
-          <div class="section-title">
-            <span>灯效模式</span>
-            <el-switch
-              v-model="lightOff"
-              size="small"
-              active-text="关灯"
-              @change="handleTurnOffLighting"
-            />
+      <!-- 右侧设置区域 -->
+      <div class="setting-card">
+        <!-- 灯效模式 -->
+        <div class="sub-card">
+          <div class="mode-top-row">
+            <span class="mode-title">灯效模式</span>
+            <div class="switch-wrap">
+              <span>关灯</span>
+              <div class="switch-btn" :class="{ on: lightOff || config.effect === 6 }" @click="toggleLightOff">
+                <div class="switch-dot"></div>
+              </div>
+            </div>
           </div>
           <div class="effect-grid">
-            <button
+            <div
               v-for="effect in effects"
               :key="effect.key"
-              class="effect-btn"
+              class="effect-item"
               :class="{ active: config.effect === effect.key }"
               @click="handleEffectChange(effect.key)"
             >
-              <div class="effect-icon" :style="{ background: effect.gradient }"></div>
+              <div class="effect-color-dot" :style="{ background: effect.gradient }"></div>
               <span>{{ effect.label }}</span>
-            </button>
+            </div>
           </div>
         </div>
 
-        <!-- Color pickers (multi-LED modes: SOLID/FLOWING/CYCLE_BREATHING/RAINBOW) -->
-        <div class="control-section" v-if="showMultiColorPicker">
-          <div class="section-title">LED 颜色设置</div>
-          <div class="color-grid">
-            <div v-for="(color, i) in config.colors" :key="'color'+i" class="color-item">
-              <span class="color-label">LED{{ i + 1 }}</span>
+        <!-- LED颜色设置 -->
+        <div class="sub-card" v-if="showMultiColorPicker || showGradientColorPicker">
+          <div class="mode-title" style="margin-bottom:16px;">LED颜色设置</div>
+          <div class="led-list">
+            <div class="led-item" v-for="(color, i) in config.colors" :key="'led'+i">
+              <span class="led-name">LED{{ i + 1 }}</span>
+              <div class="led-pre-color" :style="{ background: `rgb(${color.r},${color.g},${color.b})` }"></div>
               <ColorSliderBar v-model="config.colors[i]" @release="handleColorChange(i)" />
             </div>
           </div>
         </div>
 
-        <!-- Color pickers (gradient: start/end) -->
-        <div class="control-section" v-if="showGradientColorPicker">
-          <div class="section-title">渐变颜色设置</div>
-          <div class="color-grid">
-            <div class="color-item">
-              <span class="color-label">起始色</span>
-              <ColorSliderBar v-model="config.colors[0]" @release="handleColorChange(0)" />
-            </div>
-            <div class="color-item">
-              <span class="color-label">结束色</span>
-              <ColorSliderBar v-model="config.colors[1]" @release="handleColorChange(1)" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Direction (FLOWING/GRADIENT) -->
-        <div class="control-section" v-if="showDirection">
-          <div class="section-title">方向</div>
+        <!-- 方向按钮 -->
+        <div class="sub-card" v-if="showDirection">
+          <div class="mode-title" style="margin-bottom:16px;">方向</div>
           <div class="direction-buttons">
             <button
               class="direction-btn"
@@ -122,42 +92,51 @@
           </div>
         </div>
 
-        <!-- Brightness -->
-        <div class="control-section">
-          <div class="section-title">
-            <span>亮度</span>
-            <span class="value-text">{{ brightnessLabel }}</span>
+        <!-- 亮度 -->
+        <div class="sub-card">
+          <div class="slider-row">
+            <div class="slider-head">
+              <span>亮度</span>
+              <span>{{ brightnessLabel }}</span>
+            </div>
+            <div class="slider-bar" @mousedown.prevent="(e) => startSliderDrag(e, 'brightness')">
+              <div class="slider-fill" :style="{ width: (config.brightness / 5 * 100) + '%' }"></div>
+              <div class="slider-thumb" :style="{ left: (config.brightness / 5 * 100) + '%' }"></div>
+            </div>
           </div>
-          <el-slider v-model="config.brightness" :min="0" :max="5" :step="1" show-stops @change="handleBrightnessChange" />
         </div>
 
-        <!-- Speed (for animated effects) -->
-        <div class="control-section" v-if="showSpeed">
-          <div class="section-title">
-            <span>速度</span>
-            <span class="value-text">{{ speedLabel }}</span>
+        <!-- 速度 -->
+        <div class="sub-card" v-if="showSpeed">
+          <div class="slider-row">
+            <div class="slider-head">
+              <span>速度</span>
+              <span>{{ speedLabel }}</span>
+            </div>
+            <div class="slider-bar" @mousedown.prevent="(e) => startSliderDrag(e, 'speed')">
+              <div class="slider-fill" :style="{ width: (config.speed / 9 * 100) + '%' }"></div>
+              <div class="slider-thumb" :style="{ left: (config.speed / 9 * 100) + '%' }"></div>
+            </div>
           </div>
-          <el-slider v-model="config.speed" :min="0" :max="9" :step="1" show-stops @change="handleSpeedChange" />
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useLightingStore } from '@/stores/modules/lighting'
 import { useDeviceStore } from '@/stores/modules/device'
 import { LightingEffect, ColorPreset, FlowDirection } from '@/types/lighting'
 import type { LightingConfig, RGBColor } from '@/types/lighting'
 import ColorSliderBar from '@/components/common/ColorSliderBar.vue'
-import { ElSwitch } from 'element-plus'
 
 const lightingStore = useLightingStore()
 const deviceStore = useDeviceStore()
 
-// 使用 storeToRefs 解构以保持响应性
 const { config } = storeToRefs(lightingStore)
 
 // 响应式监听连接状态，连接建立后自动获取灯效配置
@@ -166,7 +145,7 @@ const hasFetchedLighting = ref(false)
 watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
   if (!ready || hasFetchedLighting.value) return
   hasFetchedLighting.value = true
-  
+
   console.log('[LightingView] 设备已连接，获取灯效配置...')
   try {
     const lightingConfig = await deviceStore.protocol!.getLightingConfig()
@@ -181,14 +160,12 @@ watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
       ),
       magic: lightingConfig.magic
     })
-    
-    // 将协议数据同步到 lighting store（MCU 返回的亮度/速度已经是 0-5 / 0-9 范围，直接使用）
+
     lightingStore.setEffect(lightingConfig.mode)
     lightingStore.setBrightness(lightingConfig.lightness)
     lightingStore.setSpeed(lightingConfig.runningSpeed)
     lightingStore.setColors(lightingConfig.colors)
-    
-    // 如果当前是关灯模式，同步打开关灯开关
+
     if (lightingConfig.mode === LightingEffect.OFF) {
       lightOff.value = true
     }
@@ -198,24 +175,14 @@ watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
 }, { immediate: true })
 
 const effects = [
-  { key: LightingEffect.SOLID, label: '常亮模式', gradient: 'linear-gradient(135deg, #00d4ff, #00ff88)' },
-  { key: LightingEffect.FLOWING, label: '流水模式', gradient: 'linear-gradient(135deg, #a855f7, #ec4899)' },
-  { key: LightingEffect.DPI_BREATHING, label: 'DPI呼吸', gradient: 'linear-gradient(135deg, #ff6b6b, #ffa502)' },
-  { key: LightingEffect.CYCLE_BREATHING, label: '循环呼吸', gradient: 'linear-gradient(135deg, #ff4757, #ff6348, #ffa502)' },
-  { key: LightingEffect.GRADIENT, label: '渐变颜色', gradient: 'linear-gradient(135deg, #ff0000, #00ff00, #0000ff)' },
-  { key: LightingEffect.RAINBOW, label: '炫彩色', gradient: 'linear-gradient(135deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff)' },
+  { key: LightingEffect.SOLID, label: '常亮模式', gradient: 'linear-gradient(135deg, #33e8cc, #33e8cc)' },
+  { key: LightingEffect.FLOWING, label: '流水模式', gradient: 'linear-gradient(135deg, #d868d8, #d868d8)' },
+  { key: LightingEffect.DPI_BREATHING, label: 'DPI呼吸', gradient: 'linear-gradient(135deg, #ff9944, #ff9944)' },
+  { key: LightingEffect.CYCLE_BREATHING, label: '循环呼吸', gradient: 'linear-gradient(135deg, #ff6644, #ff6644)' },
+  { key: LightingEffect.GRADIENT, label: '渐变颜色', gradient: 'linear-gradient(45deg, #ff0000, #00ff00, #0000ff)' },
+  { key: LightingEffect.RAINBOW, label: '炫彩色', gradient: 'linear-gradient(45deg, #ff8800, #00ccff, #ff00ff)' },
 ]
 
-// 颜色滑块 v-model（读写时自动同步到 config.colors）
-const currentColorModel = computed({
-  get: () => config.value.colors[0] || { r: 0, g: 212, b: 255 },
-  set: (color: RGBColor) => {
-    config.value.colors = [color]
-    applyLighting()
-  },
-})
-
-// 亮度/速度等级标签
 const BRIGHTNESS_LABELS = ['关', '微亮', '低', '中', '高', '最亮']
 const SPEED_LABELS = ['停止', '1', '2', '3', '4', '5', '6', '7', '8', '最快']
 
@@ -224,10 +191,14 @@ const speedLabel = computed(() => SPEED_LABELS[config.value.speed] || `${config.
 
 const lightOff = ref(false)
 
-async function handleTurnOffLighting(val: string | number | boolean) {
+function toggleLightOff() {
+  lightOff.value = !lightOff.value
+  handleTurnOffLighting(lightOff.value)
+}
+
+async function handleTurnOffLighting(val: boolean) {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
   if (val) {
-    // 关灯：只改mode为6，其余字段保持当前灯效模式的值
-    if (!deviceStore.isConnected || !deviceStore.protocol) return
     const colors: RGBColor[] = []
     for (let i = 0; i < 8; i++) {
       colors.push(config.value.colors[i] || { r: 0, g: 0, b: 0 })
@@ -248,10 +219,12 @@ async function handleTurnOffLighting(val: string | number | boolean) {
     } catch (e) {
       console.error('关灯失败:', e)
     }
+  } else {
+    // 开灯：恢复为之前的灯效
+    applyLighting()
   }
 }
 
-// 各模式下显示哪些控制区
 const showMultiColorPicker = computed(() => {
   return config.value.effect === LightingEffect.SOLID ||
     config.value.effect === LightingEffect.FLOWING ||
@@ -268,15 +241,6 @@ const showDirection = computed(() => {
     config.value.effect === LightingEffect.GRADIENT
 })
 
-// DPI_BREATHING 不显示颜色
-const showColorPicker = computed(() => {
-  return config.value.effect === LightingEffect.SOLID ||
-    config.value.effect === LightingEffect.DPI_BREATHING ||
-    config.value.effect === LightingEffect.FLOWING ||
-    config.value.effect === LightingEffect.CYCLE_BREATHING ||
-    config.value.effect === LightingEffect.GRADIENT
-})
-
 const showSpeed = computed(() => {
   return config.value.effect === LightingEffect.FLOWING ||
     config.value.effect === LightingEffect.DPI_BREATHING ||
@@ -288,7 +252,6 @@ const showSpeed = computed(() => {
 function handleEffectChange(effect: LightingEffect) {
   config.value.effect = effect
   lightOff.value = false
-  // 切换模式后立即发送，让设备响应新的灯效
   applyLighting()
 }
 
@@ -301,18 +264,9 @@ function handleDirectionChange(direction: FlowDirection) {
   applyLighting()
 }
 
-async function handleBrightnessChange() {
-  applyLighting()
-}
-
-async function handleSpeedChange() {
-  applyLighting()
-}
-
 async function applyLighting() {
   if (!deviceStore.isConnected || !deviceStore.protocol) return
   try {
-    // 将 store 配置转换为协议 LightingConfig 格式
     const colors: RGBColor[] = []
     for (let i = 0; i < 8; i++) {
       colors.push(config.value.colors[i] || { r: 0, g: 0, b: 0 })
@@ -334,16 +288,59 @@ async function applyLighting() {
   }
 }
 
+// 自定义滑块拖拽
+let dragState: { field: string; el: HTMLElement } | null = null
+
+function startSliderDrag(e: MouseEvent, field: 'brightness' | 'speed') {
+  e.preventDefault()
+  const bar = e.currentTarget as HTMLElement
+  if (!bar) return
+  dragState = { field, el: bar }
+  updateSliderFromEvent(e, field)
+
+  const onMove = (ev: MouseEvent) => {
+    if (!dragState || dragState.field !== field) return
+    updateSliderFromEvent(ev, field)
+  }
+  const onUp = () => {
+    if (dragState) {
+      // 抬起时再发送指令
+      applyLighting()
+    }
+    dragState = null
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+  }
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+}
+
+function updateSliderFromEvent(e: MouseEvent, field: 'brightness' | 'speed') {
+  if (!dragState) return
+  const rect = dragState.el.getBoundingClientRect()
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+  if (field === 'brightness') {
+    config.value.brightness = Math.round(pct * 5)
+  } else {
+    config.value.speed = Math.round(pct * 9)
+  }
+}
+
+onUnmounted(() => {
+  dragState = null
+})
+
 const previewColors = computed(() => config.value.colors.slice(0, 8))
-const ledPositions = [
-  { x: 50, y: 20 },
-  { x: 85, y: 20 },
-  { x: 120, y: 20 },
-  { x: 155, y: 20 },
-  { x: 50, y: 320 },
-  { x: 85, y: 320 },
-  { x: 120, y: 320 },
-  { x: 155, y: 320 },
+
+const ledDotPositions = [
+  { x: 52, y: 28 },
+  { x: 70, y: 24 },
+  { x: 90, y: 22 },
+  { x: 112, y: 23 },
+  { x: 132, y: 27 },
+  { x: 55, y: 262 },
+  { x: 82, y: 268 },
+  { x: 118, y: 267 },
 ]
 
 </script>
@@ -354,136 +351,185 @@ const ledPositions = [
 .lighting-view {
   width: 100%;
   height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 24px;
   overflow: auto;
 }
 
-.lighting-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* 左右双栏布局 */
+.light-main-wrap {
+  display: flex;
   gap: 24px;
-  max-width: 900px;
-  margin: 0 auto;
 }
 
-.preview-panel {
-  background: $bg-card;
-  border: 1px solid $border-color;
-  border-radius: $radius-md;
-  padding: 20px;
+/* 左侧预览卡片 */
+.preview-card {
+  width: 48%;
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 0 14px #00E5FF28;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.panel-title, .section-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: $accent-blue;
-  margin-bottom: 16px;
+.preview-title {
+  color: #00E5FF;
+  margin-bottom: 30px;
+  font-size: 16px;
 }
 
-.section-title {
-  font-size: 14px;
-  color: $text-secondary;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.value-text {
-  color: $accent-blue;
-  font-size: 13px;
-}
-
-.mouse-preview {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.mouse-preview-box {
+  width: 220px;
+  height: 320px;
+  position: relative;
 }
 
 .preview-svg {
-  width: 160px;
-  height: 280px;
+  width: 100%;
+  height: 100%;
+  animation: mouseGlow 3s ease-in-out infinite;
 }
 
-.rgb-strip {
-  transition: stroke 0.5s ease;
+@keyframes mouseGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px #00E5FF); }
+  50% { filter: drop-shadow(0 0 18px #00E5FF); }
 }
 
-.controls-panel {
+/* 右侧设置卡片 */
+.setting-card {
+  width: 52%;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.control-section {
-  background: $bg-card;
-  border: 1px solid $border-color;
-  border-radius: $radius-md;
+.sub-card {
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 10px;
   padding: 20px;
+  box-shadow: 0 0 14px #00E5FF28;
+}
+
+/* 灯效模式 */
+.mode-top-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.mode-title {
+  font-size: 15px;
+  color: #E6EDF7;
+}
+
+.switch-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #8A98B3;
+}
+
+.switch-btn {
+  width: 34px;
+  height: 18px;
+  background: #22283A;
+  border-radius: 9px;
+  position: relative;
+  cursor: pointer;
+  transition: 0.25s;
+
+  &.on {
+    background: #00E5FF;
+    box-shadow: 0 0 6px #00E5FF60;
+  }
+}
+
+.switch-dot {
+  width: 14px;
+  height: 14px;
+  background: #E6EDF7;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: 0.25s;
+}
+
+.switch-btn.on .switch-dot {
+  left: 18px;
 }
 
 .effect-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.effect-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 8px;
-  background: $bg-secondary;
-  border: 1px solid $border-color;
-  border-radius: $radius-sm;
-  color: $text-primary;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.3s;
-
-  &:hover {
-    border-color: $accent-blue;
-  }
-
-  &.active {
-    border-color: $accent-blue;
-    background: rgba(0, 212, 255, 0.1);
-    box-shadow: $glow-blue;
-  }
-}
-
-.effect-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid $border-color;
-}
-
-/* Multi-color grid */
-.color-grid {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
 }
 
-.color-item {
+.effect-item {
+  padding: 14px 8px;
+  background: #22283A;
+  border: 1px solid rgba(0,229,255,0.25);
+  border-radius: 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.25s;
+  color: #8A98B3;
+  font-size: 13px;
+
+  &:hover {
+    border-color: #00E5FF;
+    color: #E6EDF7;
+  }
+
+  &.active {
+    border: 1px solid #00E5FF;
+    box-shadow: 0 0 8px #00E5FF50;
+    color: #E6EDF7;
+  }
+}
+
+.effect-color-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin: 0 auto 8px;
+}
+
+/* LED颜色设置 */
+.led-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.led-item {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.color-label {
-  min-width: 40px;
-  font-size: 12px;
-  color: $text-secondary;
+.led-name {
+  width: 42px;
+  font-size: 14px;
+  color: #8A98B3;
   flex-shrink: 0;
 }
 
-/* Direction buttons */
+.led-pre-color {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+
+/* 方向按钮 */
 .direction-buttons {
   display: flex;
   gap: 10px;
@@ -492,22 +538,65 @@ const ledPositions = [
 .direction-btn {
   flex: 1;
   padding: 10px 0;
-  border: 1px solid $border-color;
-  border-radius: $radius-sm;
-  background: $bg-secondary;
-  color: $text-primary;
+  background: #22283A;
+  border: 1px solid rgba(0,229,255,0.25);
+  border-radius: 6px;
+  color: #8A98B3;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: 0.25s;
 
   &:hover {
-    border-color: $accent-blue;
+    border-color: #00E5FF;
+    color: #E6EDF7;
   }
 
   &.active {
-    border-color: $accent-blue;
-    background: rgba(0, 212, 255, 0.1);
-    box-shadow: $glow-blue;
+    border: 1px solid #00E5FF;
+    background: rgba(0,229,255,0.12);
+    color: #00E5FF;
+    box-shadow: 0 0 8px #00E5FF50;
   }
 }
+
+/* 滑块通用样式 */
+.slider-row {
+  .slider-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #8A98B3;
+  }
+}
+
+.slider-bar {
+  width: 100%;
+  height: 6px;
+  background: #22283A;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.slider-fill {
+  height: 100%;
+  background: #00E5FF;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.slider-thumb {
+  width: 16px;
+  height: 16px;
+  background: #00E5FF;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px #00E5FF80;
+  pointer-events: none;
+}
+
+
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div class="bottom-bar">
-    <!-- Profile tabs -->
+    <!-- Profile 模式切换（底部左侧） -->
     <div class="profile-tabs">
       <button
         v-for="profile in profileLayers"
@@ -15,11 +15,11 @@
 
     <!-- Action buttons -->
     <div class="action-buttons">
-      <button class="gaming-btn btn-sm" @click="handleReset">
+      <button class="right-btn-reset" @click="handleReset">
         <el-icon><Refresh /></el-icon>
         重置
       </button>
-      <button class="gaming-btn btn-sm btn-danger" @click="handleRestoreFactory">
+      <button class="right-btn-factory" @click="handleRestoreFactory">
         <el-icon><WarningFilled /></el-icon>
         复位
       </button>
@@ -60,7 +60,6 @@ async function handleProfileChange(key: ProfileLayer) {
       await deviceStore.protocol.setProfileId(key)
       const profileNames = ['默认模式', '办公模式', '游戏模式1', '游戏模式2']
       ElMessage.success(`已切换到 ${profileNames[key] || '未知模式'}`)
-      // 持久化 profile 状态
       localStorage.setItem('mouseConfig_profileId', String(key))
       console.log('[BottomBar] 切换 Profile:', {
         值: `0x${key.toString(16).padStart(2, '0')}`,
@@ -161,42 +160,72 @@ async function handleRestoreFactory() {
 .profile-tabs {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .profile-tab {
-  padding: 0 20px;
-  height: 32px;
-  background: rgba(15, 52, 96, 0.5);
-  border: 1px solid $border-color;
-  border-radius: $radius-sm;
-  color: $text-secondary;
-  font-size: 13px;
+  padding: 9px 18px;
+  background: #181C29;
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: $accent-blue;
-    color: $text-primary;
-  }
+  color: #8A98B3;
+  transition: 0.3s;
+  font-size: 14px;
 
   &.active {
-    background: linear-gradient(180deg, rgba(0,212,255,0.2) 0%, rgba(0,212,255,0.1) 100%);
-    border-color: $accent-blue;
-    color: $accent-blue;
-    box-shadow: $glow-blue;
+    background: #00E5FF;
+    color: #000;
+    box-shadow: 0 0 8px #00E5FF66;
+  }
+
+  &:hover:not(.active) {
+    border-color: #00E5FF;
+    color: #E6EDF7;
   }
 }
 
 .action-buttons {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
 
-  .gaming-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+.right-btn-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #181C29;
+  border: 1px solid #00E5FF;
+  color: #00E5FF;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.3s;
+
+  &:hover {
+    background: #00E5FF;
+    color: #0C0E16;
+    box-shadow: 0 0 8px #00E5FF66;
+  }
+}
+
+.right-btn-factory {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: #FF3355;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.3s;
+
+  &:hover {
+    box-shadow: 0 0 8px #FF335566;
   }
 }
 </style>

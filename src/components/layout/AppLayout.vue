@@ -1,5 +1,6 @@
 <template>
   <div class="app-layout" v-loading="appStore.isLoading" element-loading-text="请稍候..." element-loading-background="rgba(0, 0, 0, 0.7)">
+    <top-light></top-light>
     <TopBar />
     <div class="main-content">
       <router-view />

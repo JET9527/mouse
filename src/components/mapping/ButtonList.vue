@@ -1,5 +1,5 @@
 <template>
-  <div class="button-list" :class="side">
+  <div class="button-list">
     <KeyButton
       v-for="btn in buttons"
       :key="btn.id"
@@ -30,20 +30,8 @@ const mapping = (id: number) => props.mappings[id]
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/styles/variables.scss';
-
 .button-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  width: 220px;
-
-  &.left {
-    align-items: flex-start;
-  }
-
-  &.right {
-    align-items: flex-end;
-  }
 }
 </style>
