@@ -28,6 +28,7 @@
     <KeySelector
       v-model="selectorVisible"
       :current-button="selectedButton"
+      :combo-init-data="comboExistingData"
       @confirm="handleKeyConfirm"
       @tab-change="handleComboTabChange"
     />
@@ -52,6 +53,12 @@ const deviceStore = useDeviceStore()
 const selectorVisible = ref(false)
 const selectedButton = ref<MouseButton | null>(null)
 const hasFetchedMappings = ref(false)
+
+// 组合键已有数据（从设备读取后回填到 KeySelector）
+const comboExistingData = ref<{
+  modifiers: number[]
+  nonModifierKey: { code: number; label: string } | null
+} | null>(null)
 
 const currentProfile = computed(() => keyMappingStore.currentProfile)
 const currentMappings = computed(() => keyMappingStore.profiles[currentProfile.value].mappings)
@@ -175,7 +182,7 @@ function getKeyLabel(keyCode: number, type?: number): string {
   if (type === KeyType.MACRO) {
     return `M${keyCode}`
   }
-  if (keyCode >= 1 && keyCode <= 9) {
+  if (type !== KeyType.KEY && keyCode >= 1 && keyCode <= 9) {
     return defaultButtonLabels[keyCode]
   }
   // 鼠标功能键
@@ -271,6 +278,9 @@ function handleComboTabChange() {
     console.warn('[KeyMappingView] 设备未连接或无选中按键，跳过获取组合键')
     return
   }
+  // 清空上一次的已有数据，避免弹窗残留
+  comboExistingData.value = null
+
   const btn = selectedButton.value
   const profileKey = currentProfile.value
   const profileLayer = profileKeyToLayer[profileKey]
@@ -280,9 +290,62 @@ function handleComboTabChange() {
     console.log(`[KeyMappingView] 按键${btn.id} 快捷键数据:`, 
       Array.from(shortcutData).map(b => b.toString(16).padStart(2, '0')).join(' ')
     )
+    const parsed = parseComboShortcutData(shortcutData)
+    console.log(`[KeyMappingView] 解析结果:`, JSON.stringify(parsed))
+    comboExistingData.value = parsed
   }).catch((e) => {
     console.warn(`[KeyMappingView] 获取按键${btn.id}组合快捷键失败:`, e)
+    comboExistingData.value = null
   })
+}
+
+// 解析 5 字节组合键协议数据为 {modifiers, nonModifierKey}
+const MODIFIER_CODES = [0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7]
+const HID_KEY_LABELS: Record<number, string> = {
+  0x04: 'A', 0x05: 'B', 0x06: 'C', 0x07: 'D', 0x08: 'E',
+  0x09: 'F', 0x0A: 'G', 0x0B: 'H', 0x0C: 'I', 0x0D: 'J',
+  0x0E: 'K', 0x0F: 'L', 0x10: 'M', 0x11: 'N', 0x12: 'O',
+  0x13: 'P', 0x14: 'Q', 0x15: 'R', 0x16: 'S', 0x17: 'T',
+  0x18: 'U', 0x19: 'V', 0x1A: 'W', 0x1B: 'X', 0x1C: 'Y',
+  0x1D: 'Z', 0x1E: '1', 0x1F: '2', 0x20: '3', 0x21: '4',
+  0x22: '5', 0x23: '6', 0x24: '7', 0x25: '8', 0x26: '9',
+  0x27: '0', 0x28: 'Enter', 0x29: 'Esc', 0x2A: '退格',
+  0x2B: 'Tab', 0x2C: '空格',
+}
+function parseComboShortcutData(data: Uint8Array): {
+  modifiers: number[]
+  nonModifierKey: { code: number; label: string } | null
+} {
+  const count = data[0]
+  if (count === 0) return { modifiers: [], nonModifierKey: null }
+
+  // 将右修饰键映射为左修饰键（UI 勾选框只认左键）
+  const LEFT_MOD_MAP: Record<number, number> = {
+    0xE4: 0xE0, // Ctrl(R) → Ctrl(L)
+    0xE5: 0xE1, // Shift(R) → Shift(L)
+    0xE6: 0xE2, // Alt(R) → Alt(L)
+    0xE7: 0xE3, // Win(R) → Win(L)
+  }
+  const modifiers: number[] = []
+  let nonModifierKey: { code: number; label: string } | null = null
+
+  for (let i = 0; i < count && i < 5; i++) {
+    const code = data[1 + i]
+    if (code === 0x00) break
+    if (MODIFIER_CODES.includes(code)) {
+      const mappedCode = LEFT_MOD_MAP[code] ?? code
+      if (!modifiers.includes(mappedCode)) {
+        modifiers.push(mappedCode)
+      }
+    } else {
+      nonModifierKey = {
+        code,
+        label: HID_KEY_LABELS[code] || getKeyLabel(code, KeyType.KEY),
+      }
+    }
+  }
+
+  return { modifiers, nonModifierKey }
 }
 
 async function handleKeyConfirm(key: any) {
@@ -306,12 +369,16 @@ async function handleKeyConfirm(key: any) {
 
       try {
         // 如果是组合快捷键类型，先保存快捷键定义数据
-        if (key.type === KeyType.COMBO && comboShortcutData[key.code]) {
+        if (key.type === KeyType.COMBO) {
           const keyIndex = btnId - 1
-          console.log(`[KeyMapping] 保存组合快捷键 按键${btnId}(${key.label}) data:`, 
-            Array.from(comboShortcutData[key.code]).map(b => b.toString(16).padStart(2, '0')).join(' '))
-          await deviceStore.protocol.saveShortcutKey(profileLayer, keyIndex, comboShortcutData[key.code])
-          console.log(`[KeyMapping] 组合快捷键保存成功: ${key.label}`)
+          // 优先使用新 comboData 字段，兼容旧版 comboShortcutData 映射
+          const comboData = key.comboData || comboShortcutData[key.code]
+          if (comboData) {
+            console.log(`[KeyMapping] 保存组合快捷键 按键${btnId}(${key.label}) data:`, 
+              Array.from(comboData).map(b => b.toString(16).padStart(2, '0')).join(' '))
+            await deviceStore.protocol.saveShortcutKey(profileLayer, keyIndex, comboData)
+            console.log(`[KeyMapping] 组合快捷键保存成功: ${key.label}`)
+          }
         }
 
         // 等快捷键保存完成后再更新按键定义（完整18字节数据块）

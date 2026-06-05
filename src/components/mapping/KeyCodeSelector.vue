@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 interface KeyCodeOption {
   code: number
@@ -125,6 +125,12 @@ const selectedKey = ref<KeyCodeOption | null>(null)
 const emit = defineEmits<{
   select: [key: KeyCodeOption]
 }>()
+
+const props = defineProps<{
+  hideModifiers?: boolean
+}>()
+
+const MODIFIER_CODES = [0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7]
 
 // 字母键 A-Z (0x04-0x1D)
 const letterKeys: KeyCodeOption[] = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((c, i) => ({
@@ -164,7 +170,7 @@ const functionKeys: KeyCodeOption[] = [
 ]
 
 // 控制键 (辅助键 + 修饰键)
-const controlKeys: KeyCodeOption[] = [
+const baseControlKeys: KeyCodeOption[] = [
   { code: 0x2B, label: 'Tab' },
   { code: 0x39, label: 'CapsLock' },
   { code: 0xE1, label: 'Shift(L)' },
@@ -180,6 +186,14 @@ const controlKeys: KeyCodeOption[] = [
   { code: 0x2A, label: 'Backspace' },
   { code: 0x2C, label: 'Space' },
 ]
+
+// 当 hideModifiers=true 时过滤掉 MODIFIER 键
+const controlKeys = computed(() => {
+  if (props.hideModifiers) {
+    return baseControlKeys.filter(k => !MODIFIER_CODES.includes(k.code))
+  }
+  return baseControlKeys
+})
 
 // 编辑/导航键
 const editKeys: KeyCodeOption[] = [

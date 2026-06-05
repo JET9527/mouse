@@ -160,7 +160,7 @@ export class HIDProtocol {
   }
 
   /**
-   * 发送原始数据包
+   * 发送原始数据包，自动补充满64字节
    * @param data 要发送的数据
    * @param reportId 报告ID，默认为0（大多数HID设备使用0）
    * 
@@ -168,15 +168,28 @@ export class HIDProtocol {
    * - WebHID 的 sendReport(reportId, data) 中，data 不包含 Report ID
    * - Report ID 由 reportId 参数指定
    * - 实际发送的数据就是 data 的内容
-   * - 根据 BusHound 测试，设备期望接收 6 字节：55 01 01 66 0D 0A
+   * - 所有指令需发满64字节，不足尾部补0x00
    */
   async sendPacket(data: Uint8Array, reportId: number = 0): Promise<void> {
     try {
-      await this.sendReportFn(reportId, data)
+      // 补充满64字节
+      const padded = this.padTo64(data)
+      console.log(`[HIDProtocol] 发送(${padded.length}B):`, Array.from(padded).map(b => b.toString(16).padStart(2, '0')).join(' '))
+      await this.sendReportFn(reportId, padded)
     } catch (error: any) {
       console.error('[HIDProtocol] 发送数据包失败:', error.message)
       throw error
     }
+  }
+
+  /**
+   * 将数据补充满64字节，不足尾部填0x00
+   */
+  private padTo64(data: Uint8Array): Uint8Array {
+    if (data.length >= 64) return data
+    const padded = new Uint8Array(64)
+    padded.set(data)
+    return padded
   }
 
   /**
@@ -575,7 +588,7 @@ export class HIDProtocol {
    * 恢复出厂设置 (PC → MCU) MSG_ID = 0x90
    */
   async restoreFactorySettings(): Promise<void> {
-    const data = new Uint8Array([0x55, 0x03, 0x90, 0x33, 0x44, 0x0D, 0x0A])
+    const data = new Uint8Array([0x55, 0x02, 0x90, 0x33, 0x44, 0x0D, 0x0A])
     await this.sendPacket(data)
     await this.waitForResponse(0x91)
   }
@@ -655,6 +668,8 @@ export class HIDProtocol {
     const report = new Uint8Array(1 + data.length)
     report[0] = command
     report.set(data, 1)
-    await this.sendReportFn(0, report)
+    // 补充满64字节
+    const padded = this.padTo64(report)
+    await this.sendReportFn(0, padded)
   }
 }
