@@ -26,12 +26,7 @@
             <rect x="156" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
             <path d="M65,220 L135,220" stroke="#00E5FF66" stroke-width="1"/>
             <path d="M70,235 L130,235" stroke="#00E5FF66" stroke-width="1"/>
-            <!-- 8颗LED点位 -->
-            <circle v-for="(color, i) in previewColors" :key="'led'+i"
-              :cx="ledDotPositions[i].x" :cy="ledDotPositions[i].y"
-              r="3.5"
-              :fill="`rgb(${color.r},${color.g},${color.b})`"
-              :opacity="config.brightness > 0 ? 0.9 : 0.15" />
+
           </svg>
         </div>
       </div>
@@ -64,13 +59,27 @@
         </div>
 
         <!-- LED颜色设置 -->
-        <div class="sub-card" v-if="showMultiColorPicker || showGradientColorPicker">
-          <div class="mode-title" style="margin-bottom:16px;">LED颜色设置</div>
-          <div class="led-list">
-            <div class="led-item" v-for="(color, i) in config.colors" :key="'led'+i">
-              <span class="led-name">LED{{ i + 1 }}</span>
-              <div class="led-pre-color" :style="{ background: `rgb(${color.r},${color.g},${color.b})` }"></div>
-              <ColorSliderBar v-model="config.colors[i]" @release="handleColorChange(i)" />
+        <div class="sub-card" v-if="showMultiColorPicker">
+          <div class="led-section-label">LED选择</div>
+          <div class="led-checkbox-grid">
+            <div
+              v-for="i in 8"
+              :key="'ledck' + i"
+              class="led-checkbox-item"
+              :class="{ selected: selectedLeds.has(i - 1) }"
+              @click="toggleLed(i - 1, $event)"
+            >
+              <div class="led-check-dot" :style="{ background: rgbStr(config.colors[i - 1]) }"></div>
+              <span class="led-check-label">LED{{ i }}</span>
+              <div class="led-check-mark" v-if="selectedLeds.has(i - 1)">✓</div>
+            </div>
+          </div>
+
+          <div class="led-color-section">
+            <div class="led-section-label">颜色设置</div>
+            <div class="color-picker-row">
+              <div class="color-preview-large" :style="{ background: selectedColorStr }"></div>
+              <ColorSliderBar v-model="sliderColor" @release="onColorRelease" />
             </div>
           </div>
         </div>
@@ -130,12 +139,14 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useLightingStore } from '@/stores/modules/lighting'
 import { useDeviceStore } from '@/stores/modules/device'
+import { useAppStore } from '@/stores/modules/app'
 import { LightingEffect, ColorPreset, FlowDirection } from '@/types/lighting'
 import type { LightingConfig, RGBColor } from '@/types/lighting'
 import ColorSliderBar from '@/components/common/ColorSliderBar.vue'
 
 const lightingStore = useLightingStore()
 const deviceStore = useDeviceStore()
+const appStore = useAppStore()
 
 const { config } = storeToRefs(lightingStore)
 
@@ -143,10 +154,19 @@ const { config } = storeToRefs(lightingStore)
 const hasFetchedLighting = ref(false)
 
 watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
-  if (!ready || hasFetchedLighting.value) return
+  if (!ready) {
+    hasFetchedLighting.value = false
+    return
+  }
+  if (hasFetchedLighting.value) return
   hasFetchedLighting.value = true
+  await fetchLightingConfig()
+}, { immediate: true })
 
-  console.log('[LightingView] 设备已连接，获取灯效配置...')
+// 提取为共享函数：获取并解析灯效配置
+async function fetchLightingConfig() {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  console.log('[LightingView] 获取灯效配置...')
   try {
     const lightingConfig = await deviceStore.protocol!.getLightingConfig()
     console.log('[LightingView] 灯效配置:', {
@@ -160,19 +180,24 @@ watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
       ),
       magic: lightingConfig.magic
     })
-
     lightingStore.setEffect(lightingConfig.mode)
     lightingStore.setBrightness(lightingConfig.lightness)
     lightingStore.setSpeed(lightingConfig.runningSpeed)
     lightingStore.setColors(lightingConfig.colors)
-
     if (lightingConfig.mode === LightingEffect.OFF) {
       lightOff.value = true
     }
   } catch (error) {
     console.warn('[LightingView] 获取灯效配置失败:', error)
   }
-}, { immediate: true })
+}
+
+// 恢复出厂设置后重新获取灯效配置
+watch(() => appStore.factoryResetVersion, async () => {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  console.log('[LightingView] 恢复出厂后重新获取灯效配置...')
+  await fetchLightingConfig()
+})
 
 const effects = [
   { key: LightingEffect.SOLID, label: '常亮模式', gradient: 'linear-gradient(135deg, #33e8cc, #33e8cc)' },
@@ -190,6 +215,72 @@ const brightnessLabel = computed(() => BRIGHTNESS_LABELS[config.value.brightness
 const speedLabel = computed(() => SPEED_LABELS[config.value.speed] || `${config.value.speed}`)
 
 const lightOff = ref(false)
+
+// LED多选状态
+const selectedLeds = ref<Set<number>>(new Set())
+
+// 颜色滑动条的当前颜色
+const sliderColor = ref<RGBColor>({ r: 255, g: 0, b: 0 })
+
+// 当前选中颜色的RGB字符串
+const selectedColorStr = computed(() => {
+  return `rgb(${sliderColor.value.r}, ${sliderColor.value.g}, ${sliderColor.value.b})`
+})
+
+// RGBColor 转 rgb(r,g,b) 字符串
+function rgbStr(color: RGBColor): string {
+  return `rgb(${color.r},${color.g},${color.b})`
+}
+
+// 切换LED选中状态
+function toggleLed(index: number, event: MouseEvent) {
+  const set = new Set(selectedLeds.value)
+  if (event.shiftKey && selectedLeds.value.size > 0) {
+    // Shift点击：范围选择
+    const currentArr = Array.from(selectedLeds.value).sort((a, b) => a - b)
+    const first = currentArr[0]
+    const last = currentArr[currentArr.length - 1]
+    const start = Math.min(first, index)
+    const end = Math.max(last, index)
+    for (let i = start; i <= end; i++) {
+      set.add(i)
+    }
+  } else if (event.ctrlKey || event.metaKey) {
+    // Ctrl点击：切换单个
+    if (set.has(index)) {
+      set.delete(index)
+    } else {
+      set.add(index)
+    }
+  } else {
+    // 普通点击：单选
+    if (set.has(index) && set.size === 1) {
+      set.delete(index)
+    } else {
+      set.clear()
+      set.add(index)
+    }
+  }
+  selectedLeds.value = set
+
+  // 更新颜色滑动条为最后选中的LED的颜色
+  if (set.size > 0) {
+    const lastIdx = Array.from(set).pop()!
+    const c = config.value.colors[lastIdx]
+    sliderColor.value = { ...c }
+  }
+}
+
+// 颜色滑动条释放时应用到所有选中的LED
+function onColorRelease() {
+  const color = sliderColor.value
+  for (const idx of selectedLeds.value) {
+    config.value.colors[idx] = { ...color }
+  }
+  if (selectedLeds.value.size > 0) {
+    applyLighting()
+  }
+}
 
 function toggleLightOff() {
   lightOff.value = !lightOff.value
@@ -228,17 +319,11 @@ async function handleTurnOffLighting(val: boolean) {
 const showMultiColorPicker = computed(() => {
   return config.value.effect === LightingEffect.SOLID ||
     config.value.effect === LightingEffect.FLOWING ||
-    config.value.effect === LightingEffect.CYCLE_BREATHING ||
-    config.value.effect === LightingEffect.RAINBOW
-})
-
-const showGradientColorPicker = computed(() => {
-  return config.value.effect === LightingEffect.GRADIENT
+    config.value.effect === LightingEffect.CYCLE_BREATHING
 })
 
 const showDirection = computed(() => {
-  return config.value.effect === LightingEffect.FLOWING ||
-    config.value.effect === LightingEffect.GRADIENT
+  return config.value.effect === LightingEffect.FLOWING
 })
 
 const showSpeed = computed(() => {
@@ -330,18 +415,7 @@ onUnmounted(() => {
   dragState = null
 })
 
-const previewColors = computed(() => config.value.colors.slice(0, 8))
 
-const ledDotPositions = [
-  { x: 52, y: 28 },
-  { x: 70, y: 24 },
-  { x: 90, y: 22 },
-  { x: 112, y: 23 },
-  { x: 132, y: 27 },
-  { x: 55, y: 262 },
-  { x: 82, y: 268 },
-  { x: 118, y: 267 },
-]
 
 </script>
 
@@ -502,31 +576,91 @@ const ledDotPositions = [
 }
 
 /* LED颜色设置 */
-.led-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.led-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.led-name {
-  width: 42px;
+.led-section-label {
   font-size: 14px;
   color: #8A98B3;
+  margin-bottom: 12px;
+}
+
+.led-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.led-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #22283A;
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  user-select: none;
+
+  &:hover {
+    border-color: #00E5FF;
+    background: #28304A;
+  }
+
+  &.selected {
+    border-color: #00E5FF;
+    background: rgba(0,229,255,0.1);
+    box-shadow: 0 0 8px #00E5FF40;
+  }
+}
+
+.led-check-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.25);
   flex-shrink: 0;
 }
 
-.led-pre-color {
-  width: 26px;
-  height: 26px;
+.led-check-label {
+  font-size: 13px;
+  color: #E6EDF7;
+}
+
+.led-check-mark {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: #00E5FF;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  color: #0C0E16;
+  box-shadow: 0 0 6px #00E5FF80;
+}
+
+.led-color-section {
+  margin-top: 4px;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.color-preview-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.2);
   flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 /* 方向按钮 */

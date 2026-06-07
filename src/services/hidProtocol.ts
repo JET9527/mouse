@@ -506,14 +506,14 @@ export class HIDProtocol {
     await this.sendPacket(data)
     const response = await this.waitForResponse(0x3B)
     console.log(`[HIDProtocol] 组合快捷键 RSP(0x3B):`, Array.from(response).map(b => b.toString(16).padStart(2, '0')).join(' '))
-    return response.slice(5, 10)
+    return response.slice(5, 11) // 6字节：{count, key1, key2, key3, key4, key5}
   }
 
   /**
    * 保存快捷键定义 (PC → MCU) MSG_ID = 0x3C
    */
   async saveShortcutKey(profileId: ProfileLayer, keyIndex: number, shortcutData: Uint8Array): Promise<void> {
-    const data = new Uint8Array([0x55, 0x07, 0x3C, profileId, keyIndex, ...shortcutData, 0x0D, 0x0A])
+    const data = new Uint8Array([0x55, 0x08, 0x3C, profileId, keyIndex, ...shortcutData, 0x0D, 0x0A])
     console.log(`[HIDProtocol] 保存组合快捷键 REQ(0x3C):`, Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
     await this.sendPacket(data)
     console.log(`[HIDProtocol] 等待组合快捷键 RSP(0x3D)...`)

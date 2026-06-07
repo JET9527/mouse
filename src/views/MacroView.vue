@@ -22,8 +22,18 @@
       </div>
 
       <!--动作条目列表-->
-      <div class="action-list">
-        <div class="action-item" v-for="(step, index) in steps" :key="step.id">
+      <div class="action-list" @dragover.prevent="onDragOver" @drop.prevent="onDrop">
+        <div
+          class="action-item"
+          :class="{ 'drag-over': dragOverIndex === index }"
+          v-for="(step, index) in steps"
+          :key="step.id"
+          draggable="true"
+          @dragstart="onDragStart($event, index)"
+          @dragend="onDragEnd"
+          @dragover.prevent="onDragItemOver(index)"
+        >
+          <span class="drag-handle" title="拖拽排序">⠿</span>
           <span class="action-index">{{ index + 1 }}</span>
 
           <!-- 动作类型下拉 -->
@@ -136,6 +146,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import KeyCodeSelector from '@/components/mapping/KeyCodeSelector.vue'
 import { useDeviceStore } from '@/stores/modules/device'
 import { useKeyMappingStore } from '@/stores/modules/keyMapping'
+import { useAppStore } from '@/stores/modules/app'
 import { ElMessage } from 'element-plus'
 import { parseMacroData, serializeMacroData, MAX_MACRO_BYTES } from '@/utils/macroProtocol'
 
@@ -180,6 +191,7 @@ const totalBytes = computed(() => {
 })
 
 const deviceStore = useDeviceStore()
+const appStore = useAppStore()
 
 const MACRO_COUNT = 15
 
@@ -192,6 +204,8 @@ const keyPickerVisible = ref(false)
 const editingStepIndex = ref(-1)
 const editKeyIndex = ref(-1)
 const keyPickerRef = ref<any>(null)
+const dragIndex = ref<number | null>(null)
+const dragOverIndex = ref<number | null>(null)
 
 let stepCounter = 0
 function genId(): string {
@@ -215,6 +229,46 @@ function addStep() {
 
 function removeStep(index: number) {
   steps.value.splice(index, 1)
+}
+
+// 拖拽排序
+let dragFromIndex = -1
+
+function onDragStart(e: DragEvent, index: number) {
+  dragFromIndex = index
+  dragIndex.value = index
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+  }
+}
+
+function onDragEnd() {
+  dragIndex.value = null
+  dragOverIndex.value = null
+  dragFromIndex = -1
+}
+
+function onDragOver(e: DragEvent) {
+  // 阻止默认，允许 drop
+}
+
+function onDragItemOver(index: number) {
+  dragOverIndex.value = index
+}
+
+function onDrop(e: DragEvent) {
+  const from = dragFromIndex
+  const to = dragOverIndex.value
+  dragIndex.value = null
+  dragOverIndex.value = null
+  dragFromIndex = -1
+  if (from < 0 || to === null || from === to) return
+  moveStep(from, to)
+}
+
+function moveStep(from: number, to: number) {
+  const item = steps.value.splice(from, 1)[0]
+  steps.value.splice(to, 0, item)
 }
 
 function onActionChange(step: MacroStep) {
@@ -289,6 +343,13 @@ watch(() => deviceStore.protocol, (proto) => {
   if (proto) {
     fetchCurrentMacro()
   }
+})
+
+// 恢复出厂设置后重新获取宏数据
+watch(() => appStore.factoryResetVersion, async () => {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  console.log('[MacroView] 恢复出厂后重新获取宏数据...')
+  await fetchCurrentMacro()
 })
 
 function validatePressReleasePairs(): string | null {
@@ -723,6 +784,28 @@ async function saveToDevice() {
   font-size: 14px;
 }
 
+/* 拖拽把手 */
+.drag-handle {
+  color: #555;
+  font-size: 16px;
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+  letter-spacing: 2px;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #00E5FF;
+  }
+}
+
+.action-item {
+  &.drag-over {
+    border-color: #00E5FF;
+    box-shadow: 0 0 10px #00E5FF60;
+    background: #28304A;
+  }
+}
 
 .key-picker-dialog {
   :deep(.el-dialog__body) {

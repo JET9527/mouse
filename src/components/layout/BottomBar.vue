@@ -93,6 +93,8 @@ async function handleReset() {
       await deviceStore.protocol.restoreFactorySettings()
       console.log('[BottomBar] 恢复出厂设置成功')
       ElMessage.success('已恢复出厂设置')
+      // 通知所有页面重新获取设备数据
+      appStore.triggerFactoryReset()
     } catch (error: any) {
       console.error('[BottomBar] 恢复出厂设置失败:', error)
       ElMessage.error('恢复出厂设置失败: ' + error.message)

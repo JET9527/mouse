@@ -9,6 +9,11 @@ export const useAppStore = defineStore('app', () => {
   const language = ref('zh-CN')
   const webhidSupported = ref(true)
   const isLoading = ref(false)
+  const factoryResetVersion = ref(0)
+
+  function triggerFactoryReset() {
+    factoryResetVersion.value++
+  }
 
   function setTab(tab: string) {
     currentTab.value = tab
@@ -33,8 +38,10 @@ export const useAppStore = defineStore('app', () => {
     language,
     webhidSupported,
     isLoading,
+    factoryResetVersion,
     setTab,
     setProfile,
+    triggerFactoryReset,
     setWebHIDSupported,
     setLoading,
   }

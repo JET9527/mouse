@@ -234,7 +234,13 @@ async function fetchMacroDataStatus() {
 
 watch(() => props.modelValue, (val) => {
   visible.value = val
-  if (val) selectedKey.value = null
+  if (val) {
+    // 每次打开弹窗默认回到第一个tab（鼠标功能），清空所有选中状态
+    selectedKey.value = null
+    activeType.value = 'mouseFunc'
+    selectedModifiers.value = []
+    selectedComboKey.value = null
+  }
 })
 
 watch(visible, (val) => emit('update:modelValue', val))
@@ -292,18 +298,27 @@ function clearComboKey() {
   selectedComboKey.value = null
 }
 
-// 构建组合键协议数据：{count, modifier1, modifier2, ..., keyCode, 0x00}
+// 构建组合键协议数据：6字节 {count, key1, key2, key3, key4, key5}
 function buildComboData(): Uint8Array {
   const modifiers = selectedModifiers.value
   const keyCode = selectedComboKey.value?.code ?? 0
-  const totalKeys = modifiers.length + 1
-  const data = new Uint8Array(5)
-  data[0] = totalKeys
-  modifiers.forEach((mod, i) => {
-    data[1 + i] = mod
-  })
-  data[1 + modifiers.length] = keyCode
-  // 剩余字节默认为 0x00
+  const MODIFIER_ORDER = [0xE0, 0xE1, 0xE2, 0xE3] // Ctrl, Shift, Alt, Win
+  // 先收集所有按键码：修饰键在前，非修饰键在后
+  const keys: number[] = []
+  for (const mod of MODIFIER_ORDER) {
+    if (modifiers.includes(mod)) {
+      keys.push(mod)
+    }
+  }
+  if (keyCode !== 0x00) {
+    keys.push(keyCode)
+  }
+  // 第1字节为按键个数，后面依次排列
+  const data = new Uint8Array(6)
+  data[0] = Math.min(keys.length, 5)
+  for (let i = 0; i < keys.length && i < 5; i++) {
+    data[1 + i] = keys[i]
+  }
   return data
 }
 

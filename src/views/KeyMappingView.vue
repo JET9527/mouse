@@ -54,12 +54,14 @@ import MouseVisual from '@/components/mapping/MouseVisual.vue'
 import KeySelector from '@/components/mapping/KeySelector.vue'
 import { useKeyMappingStore } from '@/stores/modules/keyMapping'
 import { useDeviceStore } from '@/stores/modules/device'
+import { useAppStore } from '@/stores/modules/app'
 import { ProfileLayer, KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
 import { MOUSE_BUTTONS, PROFILE_LAYERS } from '@/utils/constants'
 
 const keyMappingStore = useKeyMappingStore()
 const deviceStore = useDeviceStore()
+const appStore = useAppStore()
 
 const selectorVisible = ref(false)
 const selectedButton = ref<MouseButton | null>(null)
@@ -94,98 +96,82 @@ const defaultButtonLabels: Record<number, string> = {
 
 // 连接后自动获取任意模式的按键定义
 watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
-  if (!ready || hasFetchedMappings.value) return
+  if (!ready) {
+    // 设备断开时重置标记，重新连接后重新获取
+    hasFetchedMappings.value = false
+    return
+  }
+  if (hasFetchedMappings.value) return
   hasFetchedMappings.value = true
 
-  console.log('[KeyMappingView] 设备已连接，获取按键定义...')
-  try {
-    // 先获取当前 Profile ID
-    const profileId = await deviceStore.protocol!.getProfileId()
-    console.log('[KeyMappingView] 当前Profile ID:', profileId)
+  await fetchAndSetMappings()
+}, { immediate: true })
 
-    // 获取 DEFAULT 模式的按键定义
-    const mappingData = await deviceStore.protocol!.getKeyMappings(ProfileLayer.DEFAULT)
+// 恢复出厂设置后重新获取按键定义
+watch(() => appStore.factoryResetVersion, async () => {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  console.log('[KeyMappingView] 恢复出厂后重新获取按键定义...')
+  await fetchAndSetMappings()
+})
+
+// 提取为共享函数：获取并解析按键定义数据
+async function fetchAndSetMappings() {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  const currentLayer = appStore.currentProfile
+  const profileKey = profileLayerToKey[currentLayer]
+  console.log(`[KeyMappingView] 获取按键定义(profileLayer=0x${currentLayer.toString(16)}, profileKey=${profileKey})...`)
+  try {
+    const mappingData = await deviceStore.protocol!.getKeyMappings(currentLayer)
     console.log('[KeyMappingView] 按键定义原始数据:', 
       Array.from(mappingData).map(b => b.toString(16).padStart(2, '0')).join(' ')
     )
-
-    // 解析按键定义数据
-    // 协议格式：data[18] = {类型, 键值} × 9，每按键2字节
-    // 设备实际只有6个按键，只解析前6个
     const bytesPerButton = 2
-    const mappings: Record<number, import('@/types/keyMapping').KeyMapping> = {}
+    const mappings: Record<number, import("@/types/keyMapping").KeyMapping> = {}
     for (let i = 0; i < 6; i++) {
       const offset = i * bytesPerButton
       const buttonId = i + 1
-
       if (offset + bytesPerButton <= mappingData.length) {
         const type = mappingData[offset]
         const keyCode = mappingData[offset + 1]
-
         mappings[buttonId] = {
           buttonId,
           type: type as KeyType,
-          target: {
-            keyCode,
-            label: getKeyLabel(keyCode, type) || defaultButtonLabels[buttonId],
-          },
-          layer: ProfileLayer.DEFAULT,
+          target: { keyCode, label: getKeyLabel(keyCode, type) || defaultButtonLabels[buttonId] },
+          layer: currentLayer,
           enabled: true,
         }
       }
     }
-
     if (Object.keys(mappings).length > 0) {
-      keyMappingStore.setMappings('default', mappings)
-
-      // 打印解析后的按键定义
-      const typeLabels: Record<number, string> = {
-        0x00: '无定义',
-        0x01: '按键',
-        0x02: '宏录制',
-        0x03: '鼠标功能',
-        0x04: '组合快捷键',
-      }
-      console.log('[KeyMappingView] 按键定义解析结果:')
-      for (let i = 0; i < 6; i++) {
-        const bid = i + 1
-        const m = mappings[bid]
-        const typeName = typeLabels[m.type as number] || `0x${(m.type as number).toString(16).padStart(2, '0')}`
-        console.log(`  按键${bid}(${defaultButtonLabels[bid]}): 类型=${typeName}, 键值=0x${(m.target as any).keyCode.toString(16).padStart(2, '0')} → ${(m.target as any).label || ''}`)
-      }
-
-      // 获取组合快捷键定义（类型为 COMBO 的按键）
+      keyMappingStore.setMappings(profileKey, mappings)
       const comboButtonIds = Object.entries(mappings)
         .filter(([_, m]) => m.type === KeyType.COMBO)
         .map(([id]) => Number(id))
-      
-      if (comboButtonIds.length > 0) {
-        console.log('[KeyMappingView] 发现组合快捷键按键:', comboButtonIds)
-        for (const bid of comboButtonIds) {
-          try {
-            const keyIndex = bid - 1  // 协议索引 0-based
-            const shortcutData = await deviceStore.protocol!.getShortcutKey(ProfileLayer.DEFAULT, keyIndex)
-            console.log(`[KeyMappingView] 按键${bid} 快捷键原始数据:`, 
-              Array.from(shortcutData).map(b => b.toString(16).padStart(2, '0')).join(' ')
-            )
-            const comboLabel = parseShortcutData(shortcutData)
-            if (comboLabel) {
-              keyMappingStore.updateMapping(bid, {
-                target: { keyCode: 0, label: comboLabel } as any,
-              })
-              keyMappingStore.markAsSaved()
-            }
-          } catch (e) {
-            console.warn(`[KeyMappingView] 获取按键${bid}快捷键失败:`, e)
+      for (const bid of comboButtonIds) {
+        try {
+          const keyIndex = bid - 1
+          const shortcutData = await deviceStore.protocol!.getShortcutKey(currentLayer, keyIndex)
+          const comboLabel = parseShortcutData(shortcutData)
+          if (comboLabel) {
+            keyMappingStore.updateMapping(bid, { target: { keyCode: 0, label: comboLabel } as any })
+            keyMappingStore.markAsSaved()
           }
+        } catch (e) {
+          console.warn(`[KeyMappingView] 获取按键${bid}快捷键失败:`, e)
         }
-        console.log('[KeyMappingView] 组合快捷键定义加载完成')
       }
     }
   } catch (error) {
     console.warn('[KeyMappingView] 获取按键定义失败:', error)
   }
-}, { immediate: true })
+}
+
+// Profile切换时重新获取按键定义
+watch(() => appStore.currentProfile, async () => {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  console.log('[KeyMappingView] Profile切换，重新获取按键定义...')
+  await fetchAndSetMappings()
+})
 
 // 获取按键标签（简易实现，后续可完善）
 function getKeyLabel(keyCode: number, type?: number): string {
@@ -256,13 +242,14 @@ const modifierLabel: Record<number, string> = {
   0xE0: 'Ctrl', 0xE1: 'Shift', 0xE2: 'Alt', 0xE3: 'Win',
 }
 
-// 解析快捷键数据 data[5] = {count, key1, key2, key3, key4}
+// 解析组合快捷键数据，用于显示标签
+// 6字节格式：{count, key1, key2, key3, key4, key5}
 function parseShortcutData(data: Uint8Array): string {
   if (!data || data.length < 1) return ''
   const count = data[0]
   if (count === 0) return ''
   const keys: string[] = []
-  for (let i = 0; i < count && i < 4; i++) {
+  for (let i = 0; i < count && i < 5; i++) {
     const code = data[1 + i]
     if (code === 0) break
     const mod = modifierLabel[code]
@@ -318,52 +305,26 @@ function handleComboTabChange() {
   })
 }
 
-// 解析 5 字节组合键协议数据为 {modifiers, nonModifierKey}
-const MODIFIER_CODES = [0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7]
-const HID_KEY_LABELS: Record<number, string> = {
-  0x04: 'A', 0x05: 'B', 0x06: 'C', 0x07: 'D', 0x08: 'E',
-  0x09: 'F', 0x0A: 'G', 0x0B: 'H', 0x0C: 'I', 0x0D: 'J',
-  0x0E: 'K', 0x0F: 'L', 0x10: 'M', 0x11: 'N', 0x12: 'O',
-  0x13: 'P', 0x14: 'Q', 0x15: 'R', 0x16: 'S', 0x17: 'T',
-  0x18: 'U', 0x19: 'V', 0x1A: 'W', 0x1B: 'X', 0x1C: 'Y',
-  0x1D: 'Z', 0x1E: '1', 0x1F: '2', 0x20: '3', 0x21: '4',
-  0x22: '5', 0x23: '6', 0x24: '7', 0x25: '8', 0x26: '9',
-  0x27: '0', 0x28: 'Enter', 0x29: 'Esc', 0x2A: '退格',
-  0x2B: 'Tab', 0x2C: '空格',
-}
+// 解析 6 字节组合键协议数据为 {modifiers, nonModifierKey}
+// 6字节格式：{count, key1, key2, key3, key4, key5}
+const MODIFIER_CODES = [0xE0, 0xE1, 0xE2, 0xE3]
 function parseComboShortcutData(data: Uint8Array): {
   modifiers: number[]
   nonModifierKey: { code: number; label: string } | null
 } {
+  if (!data || data.length < 1) return { modifiers: [], nonModifierKey: null }
   const count = data[0]
-  if (count === 0) return { modifiers: [], nonModifierKey: null }
-
-  // 将右修饰键映射为左修饰键（UI 勾选框只认左键）
-  const LEFT_MOD_MAP: Record<number, number> = {
-    0xE4: 0xE0, // Ctrl(R) → Ctrl(L)
-    0xE5: 0xE1, // Shift(R) → Shift(L)
-    0xE6: 0xE2, // Alt(R) → Alt(L)
-    0xE7: 0xE3, // Win(R) → Win(L)
-  }
   const modifiers: number[] = []
   let nonModifierKey: { code: number; label: string } | null = null
-
   for (let i = 0; i < count && i < 5; i++) {
     const code = data[1 + i]
     if (code === 0x00) break
     if (MODIFIER_CODES.includes(code)) {
-      const mappedCode = LEFT_MOD_MAP[code] ?? code
-      if (!modifiers.includes(mappedCode)) {
-        modifiers.push(mappedCode)
-      }
+      modifiers.push(code)
     } else {
-      nonModifierKey = {
-        code,
-        label: HID_KEY_LABELS[code] || getKeyLabel(code, KeyType.KEY),
-      }
+      nonModifierKey = { code, label: hidKeyLabel[code] || getKeyLabel(code, KeyType.KEY) }
     }
   }
-
   return { modifiers, nonModifierKey }
 }
 
@@ -419,19 +380,19 @@ const profileKeyToLayer: Record<string, ProfileLayer> = {
   game2: ProfileLayer.GAME2,
 }
 
-// 组合快捷键码 → HID数据 {count, modifier, keyCode, 0, 0}
+// 组合快捷键码 → 6字节 {count, key1, key2, key3, key4, key5}
 const comboShortcutData: Record<number, Uint8Array> = {
-  200: new Uint8Array([0x02, 0xE0, 0x06, 0x00, 0x00]), // Ctrl+C
-  201: new Uint8Array([0x02, 0xE0, 0x19, 0x00, 0x00]), // Ctrl+V
-  202: new Uint8Array([0x02, 0xE0, 0x1B, 0x00, 0x00]), // Ctrl+X
-  203: new Uint8Array([0x02, 0xE0, 0x1D, 0x00, 0x00]), // Ctrl+Z
-  204: new Uint8Array([0x02, 0xE0, 0x16, 0x00, 0x00]), // Ctrl+S
-  205: new Uint8Array([0x02, 0xE0, 0x04, 0x00, 0x00]), // Ctrl+A
-  206: new Uint8Array([0x02, 0xE2, 0x2B, 0x00, 0x00]), // Alt+Tab
-  207: new Uint8Array([0x02, 0xE3, 0x07, 0x00, 0x00]), // Win+D
-  208: new Uint8Array([0x02, 0xE3, 0x08, 0x00, 0x00]), // Win+E
-  209: new Uint8Array([0x02, 0xE3, 0x0F, 0x00, 0x00]), // Win+L
-  210: new Uint8Array([0x02, 0xE3, 0x1B, 0x00, 0x00]), // Win+X
+  200: new Uint8Array([0x02, 0xE0, 0x06, 0x00, 0x00, 0x00]), // Ctrl+C
+  201: new Uint8Array([0x02, 0xE0, 0x19, 0x00, 0x00, 0x00]), // Ctrl+V
+  202: new Uint8Array([0x02, 0xE0, 0x1B, 0x00, 0x00, 0x00]), // Ctrl+X
+  203: new Uint8Array([0x02, 0xE0, 0x1D, 0x00, 0x00, 0x00]), // Ctrl+Z
+  204: new Uint8Array([0x02, 0xE0, 0x16, 0x00, 0x00, 0x00]), // Ctrl+S
+  205: new Uint8Array([0x02, 0xE0, 0x04, 0x00, 0x00, 0x00]), // Ctrl+A
+  206: new Uint8Array([0x02, 0xE2, 0x2B, 0x00, 0x00, 0x00]), // Alt+Tab
+  207: new Uint8Array([0x02, 0xE3, 0x07, 0x00, 0x00, 0x00]), // Win+D
+  208: new Uint8Array([0x02, 0xE3, 0x08, 0x00, 0x00, 0x00]), // Win+E
+  209: new Uint8Array([0x02, 0xE3, 0x0F, 0x00, 0x00, 0x00]), // Win+L
+  210: new Uint8Array([0x02, 0xE3, 0x1B, 0x00, 0x00, 0x00]), // Win+X
 }
 
 // 复位当前Profile的按键定义
@@ -585,3 +546,4 @@ function buildMappingDataBlock(mappings: Record<number, import('@/types/keyMappi
   }
 }
 </style>
+      

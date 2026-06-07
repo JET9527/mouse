@@ -67,9 +67,11 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted } from 'vue'
 import { useDeviceStore } from '@/stores/modules/device'
+import { useAppStore } from '@/stores/modules/app'
 import { ElMessage } from 'element-plus'
 
 const deviceStore = useDeviceStore()
+const appStore = useAppStore()
 
 // DPI 6档固定值（对应协议0x00~0x05）
 const dpiValues = [800, 1600, 3200, 4800, 9600, 20000]
@@ -152,6 +154,13 @@ watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
     await fetchSettings()
   }
 }, { immediate: true })
+
+// 恢复出厂设置后重新获取性能参数
+watch(() => appStore.factoryResetVersion, async () => {
+  if (!deviceStore.isConnected || !deviceStore.protocol) return
+  console.log('[SettingsView] 恢复出厂后重新获取性能参数...')
+  await fetchSettings()
+})
 
 // 回报率切换保存
 function onPollingRateChange(rate: number) {
