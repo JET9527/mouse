@@ -2,7 +2,7 @@
   <div class="keycode-selector">
     <el-tabs v-model="activeTab" class="type-tabs">
       <!-- 字母键 -->
-      <el-tab-pane label="字母键" name="letters">
+      <el-tab-pane :label="$t('keyCodeSelector.tabLetters')" name="letters">
         <div class="key-grid columns-7">
           <button
             v-for="key in letterKeys"
@@ -15,7 +15,7 @@
       </el-tab-pane>
 
       <!-- 数字/符号 + 方向键 -->
-      <el-tab-pane label="数字/符号" name="symbols">
+      <el-tab-pane :label="$t('keyCodeSelector.tabSymbols')" name="symbols">
         <div class="key-grid columns-7">
           <button
             v-for="key in symbolRowKeys"
@@ -37,7 +37,7 @@
       </el-tab-pane>
 
       <!-- 功能键 -->
-      <el-tab-pane label="功能键" name="functions">
+      <el-tab-pane :label="$t('keyCodeSelector.tabFunctions')" name="functions">
         <div class="key-grid columns-7">
           <button
             v-for="key in functionKeys"
@@ -50,7 +50,7 @@
       </el-tab-pane>
 
       <!-- 控制键 -->
-      <el-tab-pane label="控制键" name="controls">
+      <el-tab-pane :label="$t('keyCodeSelector.tabControls')" name="controls">
         <div class="key-grid columns-5">
           <button
             v-for="key in controlKeys"
@@ -63,7 +63,7 @@
       </el-tab-pane>
 
       <!-- 编辑键 -->
-      <el-tab-pane label="编辑键" name="edits">
+      <el-tab-pane :label="$t('keyCodeSelector.tabEdits')" name="edits">
         <div class="key-grid columns-5">
           <button
             v-for="key in editKeys"
@@ -76,7 +76,7 @@
       </el-tab-pane>
 
       <!-- 小键盘 -->
-      <el-tab-pane label="小键盘" name="numpad">
+      <el-tab-pane :label="$t('keyCodeSelector.tabNumpad')" name="numpad">
         <div class="key-grid columns-5">
           <button
             v-for="key in numpadKeys"
@@ -89,7 +89,7 @@
       </el-tab-pane>
 
       <!-- 多媒体 -->
-      <el-tab-pane label="多媒体" name="media">
+      <el-tab-pane :label="$t('keyCodeSelector.tabMedia')" name="media">
         <div class="key-grid columns-5">
           <button
             v-for="key in mediaKeys"
@@ -103,7 +103,7 @@
     </el-tabs>
 
     <div class="selected-preview" v-if="selectedKey">
-      <span class="preview-label">已选择：</span>
+      <span class="preview-label">{{ $t('keyCodeSelector.selected') }}</span>
       <span class="preview-value">{{ selectedKey.label }}</span>
       <span class="preview-code">(0x{{ selectedKey.code.toString(16).padStart(2, '0').toUpperCase() }})</span>
     </div>
@@ -112,6 +112,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface KeyCodeOption {
   code: number
@@ -238,17 +241,17 @@ const numpadKeys: KeyCodeOption[] = [
 ]
 
 // 常用多媒体键
-const mediaKeys: KeyCodeOption[] = [
-  { code: 0xA8, label: '静音' },
-  { code: 0xA9, label: '音量+' },
-  { code: 0xAA, label: '音量-' },
-  { code: 0xAB, label: '下一曲' },
-  { code: 0xAC, label: '上一曲' },
-  { code: 0xAF, label: '停止' },
-  { code: 0xB0, label: '播放/暂停' },
-  { code: 0xB7, label: '计算器' },
-  { code: 0xB8, label: '我的电脑' },
-]
+const mediaKeys = computed<KeyCodeOption[]>(() => [
+  { code: 0xA8, label: t('keyCodeSelector.mediaMute') },
+  { code: 0xA9, label: t('keyCodeSelector.mediaVolUp') },
+  { code: 0xAA, label: t('keyCodeSelector.mediaVolDown') },
+  { code: 0xAB, label: t('keyCodeSelector.mediaNext') },
+  { code: 0xAC, label: t('keyCodeSelector.mediaPrev') },
+  { code: 0xAF, label: t('keyCodeSelector.mediaStop') },
+  { code: 0xB0, label: t('keyCodeSelector.mediaPlayPause') },
+  { code: 0xB7, label: t('keyCodeSelector.mediaCalc') },
+  { code: 0xB8, label: t('keyCodeSelector.mediaComputer') },
+])
 
 function selectKey(key: KeyCodeOption) {
   selectedCode.value = key.code

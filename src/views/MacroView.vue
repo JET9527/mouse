@@ -17,8 +17,8 @@
 
       <!--标题+剩余内存-->
       <div class="macro-head-row">
-        <div class="macro-title">编辑宏动作</div>
-        <div class="mem-info">剩余内存：{{ totalBytes }} / {{ MAX_MACRO_BYTES }} B</div>
+        <div class="macro-title">{{ $t('macro.editTitle') }}</div>
+        <div class="mem-info">{{ $t('macro.memoryRemaining', { used: totalBytes, max: MAX_MACRO_BYTES }) }}</div>
       </div>
 
       <!--动作条目列表-->
@@ -33,16 +33,16 @@
           @dragend="onDragEnd"
           @dragover.prevent="onDragItemOver(index)"
         >
-          <span class="drag-handle" title="拖拽排序">⠿</span>
+          <span class="drag-handle" :title="$t('macro.dragHint')">⠿</span>
           <span class="action-index">{{ index + 1 }}</span>
 
           <!-- 动作类型下拉 -->
           <select class="sel-action-type" v-model="step.action" @change="onActionChange(step)">
-            <option value="press">按下</option>
-            <option value="click">点击</option>
-            <option value="release">抬起</option>
-            <option value="text">文本</option>
-            <option value="delay">延时</option>
+            <option value="press">{{ $t('macro.actionPress') }}</option>
+            <option value="click">{{ $t('macro.actionClick') }}</option>
+            <option value="release">{{ $t('macro.actionRelease') }}</option>
+            <option value="text">{{ $t('macro.actionText') }}</option>
+            <option value="delay">{{ $t('macro.actionDelay') }}</option>
           </select>
 
           <!-- 参数输入 -->
@@ -58,8 +58,8 @@
                 {{ k.label }}
                 <span class="key-tag-remove" @click.stop="removeKey(index, ki)">✕</span>
               </span>
-              <span class="add-key-text" @click="editKeyIndex = -1; openKeyPicker(index)">+添加按键</span>
-              <div v-if="step.keys.length === 0" class="key-empty-hint">尚未添加按键</div>
+              <span class="add-key-text" @click="editKeyIndex = -1; openKeyPicker(index)">{{ $t('macro.addKey') }}</span>
+              <div v-if="step.keys.length === 0" class="key-empty-hint">{{ $t('macro.noKeys') }}</div>
             </div>
             <!-- 文本 -->
             <input
@@ -67,14 +67,14 @@
               v-model="step.text"
               class="param-input"
               type="text"
-              placeholder="输入文本内容..."
+              :placeholder="$t('macro.textPlaceholder')"
             />
             <!-- 延时 -->
             <div v-else-if="step.action === 'delay'" class="param-delay">
               <div class="delay-header">
-                <span class="delay-label">{{ step.delayRandom ? '随机延时' : '固定延时' }}</span>
+                <span class="delay-label">{{ step.delayRandom ? $t('macro.delayRandom') : $t('macro.delayFixed') }}</span>
                 <label class="delay-toggle">
-                  <span class="toggle-text">随机</span>
+                  <span class="toggle-text">{{ $t('macro.randomLabel') }}</span>
                   <input type="checkbox" v-model="step.delayRandom" />
                   <span class="toggle-slider"></span>
                 </label>
@@ -87,7 +87,7 @@
                   min="0"
                   placeholder="500"
                 />
-                <span class="delay-unit">ms</span>
+                <span class="delay-unit">{{ $t('macro.msUnit') }}</span>
               </div>
               <div v-else class="delay-random">
                 <input
@@ -95,7 +95,7 @@
                   class="param-input delay-input"
                   type="number"
                   min="0"
-                  placeholder="最小"
+                  :placeholder="$t('macro.minLabel')"
                 />
                 <span class="delay-sep">~</span>
                 <input
@@ -103,9 +103,9 @@
                   class="param-input delay-input"
                   type="number"
                   min="0"
-                  placeholder="最大"
+                  :placeholder="$t('macro.maxLabel')"
                 />
-                <span class="delay-unit">ms</span>
+                <span class="delay-unit">{{ $t('macro.msUnit') }}</span>
               </div>
             </div>
           </div>
@@ -115,27 +115,27 @@
           <span class="del-action" @click="removeStep(index)">×</span>
         </div>
 
-        <div class="empty-hint" v-if="steps.length === 0">暂无步骤，点击下方添加动作</div>
+        <div class="empty-hint" v-if="steps.length === 0">{{ $t('macro.noSteps') }}</div>
       </div>
 
       <!--底部按钮栏-->
       <div class="macro-bottom-bar">
-        <button class="add-action-btn" @click="addStep">+ 添加动作</button>
-        <button class="save-macro-btn" :disabled="steps.length === 0 || totalBytes > MAX_MACRO_BYTES || !deviceStore.isConnected" @click="saveToDevice">保存到设备</button>
+        <button class="add-action-btn" @click="addStep">{{ $t('macro.addAction') }}</button>
+        <button class="save-macro-btn" :disabled="steps.length === 0 || totalBytes > MAX_MACRO_BYTES || !deviceStore.isConnected" @click="saveToDevice">{{ $t('macro.saveToDevice') }}</button>
       </div>
     </div>
 
     <!-- Key code picker dialog -->
     <el-dialog
       v-model="keyPickerVisible"
-      title="选择按键"
+      :title="$t('macro.selectKey')"
       width="720px"
       :close-on-click-modal="false"
       class="key-picker-dialog"
     >
       <KeyCodeSelector @select="onKeyPicked" ref="keyPickerRef" />
       <template #footer>
-        <button class="gaming-btn" @click="keyPickerVisible = false">关闭</button>
+        <button class="gaming-btn" @click="keyPickerVisible = false">{{ $t('macro.close') }}</button>
       </template>
     </el-dialog>
   </div>
@@ -149,6 +149,9 @@ import { useKeyMappingStore } from '@/stores/modules/keyMapping'
 import { useAppStore } from '@/stores/modules/app'
 import { ElMessage } from 'element-plus'
 import { parseMacroData, serializeMacroData, MAX_MACRO_BYTES } from '@/utils/macroProtocol'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface KeyEntry {
   code: number
@@ -221,7 +224,7 @@ function switchMacro(index: number) {
 function addStep() {
   const newStep: MacroStep = { id: genId(), action: 'press', keys: [] }
   if (totalBytes.value + calcStepBytes(newStep) > MAX_MACRO_BYTES) {
-    ElMessage.warning(`数据已超出 ${MAX_MACRO_BYTES} 字节限制，无法添加新动作`)
+    ElMessage.warning(t('macro.dataExceeded', { limit: MAX_MACRO_BYTES }))
     return
   }
   steps.value.push(newStep)
@@ -306,7 +309,7 @@ function onKeyPicked(key: any) {
       const newBytes = 2 + (step.keys.length + 1)
       const otherBytes = totalBytes.value - calcStepBytes(step)
       if (otherBytes + newBytes > MAX_MACRO_BYTES) {
-        ElMessage.warning(`数据已超出 ${MAX_MACRO_BYTES} 字节限制，无法添加更多按键`)
+        ElMessage.warning(t('macro.dataExceededAddKey', { limit: MAX_MACRO_BYTES }))
         keyPickerVisible.value = false
         editingStepIndex.value = -1
         editKeyIndex.value = -1
@@ -364,7 +367,7 @@ function validatePressReleasePairs(): string | null {
   }
 
   if (pressIndices.length !== releaseIndices.length) {
-    return '按下与抬起是一对组合，按键值必须一致才能保存！'
+    return t('macro.pressReleaseMismatch')
   }
 
   for (let pi = 0; pi < pressIndices.length; pi++) {
@@ -372,12 +375,12 @@ function validatePressReleasePairs(): string | null {
     const releaseStep = stepsList[releaseIndices[pi]]
 
     if (pressStep.keys.length !== releaseStep.keys.length) {
-      return '按下与抬起是一对组合，按键值必须一致才能保存！'
+      return t('macro.pressReleaseMismatch')
     }
 
     for (let ki = 0; ki < pressStep.keys.length; ki++) {
       if (pressStep.keys[ki].code !== releaseStep.keys[ki].code) {
-        return '按下与抬起是一对组合，按键值必须一致才能保存！'
+        return t('macro.pressReleaseMismatch')
       }
     }
   }
@@ -395,26 +398,26 @@ async function saveToDevice() {
   for (const step of steps.value) {
     if (step.action === 'text' && step.text) {
       if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(step.text)) {
-        ElMessage.warning('当前文本不支持中文输入！')
+        ElMessage.warning(t('macro.noChineseText'))
         return
       }
     }
   }
   if (!deviceStore.isConnected || !deviceStore.protocol) {
-    ElMessage.warning('设备未连接')
+    ElMessage.warning(t('macro.deviceNotConnected'))
     return
   }
   try {
     const data = serializeMacroData(steps.value)
     if (data.length > MAX_MACRO_BYTES) {
-      ElMessage.warning(`数据超出 ${MAX_MACRO_BYTES} 字节限制 (${data.length}B)，无法保存`)
+      ElMessage.warning(t('macro.dataTooLarge', { limit: MAX_MACRO_BYTES, size: data.length }))
       return
     }
     await deviceStore.protocol.saveMacroData(macroSelectIndex.value, data)
-    ElMessage.success(`宏 M${macroSelectIndex.value} 已保存 (${data.length}B)`)
+    ElMessage.success(t('macro.saved', { index: macroSelectIndex.value, size: data.length }))
   } catch (e) {
     console.error('[MacroView] 保存宏失败:', e)
-    ElMessage.error('保存宏失败')
+    ElMessage.error(t('macro.saveFailed'))
   }
 }
 </script>

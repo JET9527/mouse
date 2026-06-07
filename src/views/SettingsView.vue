@@ -6,11 +6,11 @@
       <div class="col-dpi setting-card">
         <div class="card-title">
           <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
-          DPI设置
+          {{ $t('settings.dpiSettings') }}
         </div>
         <div class="dpi-list">
           <div class="dpi-item" v-for="(dpi, index) in dpiValues" :key="index">
-            <span class="dpi-name">档位 {{ index + 1 }} <span class="dpi-val">{{ dpi }} DPI</span></span>
+            <span class="dpi-name">{{ $t('settings.gear') }} {{ index + 1 }} <span class="dpi-val">{{ dpi }} DPI</span></span>
             <div
               class="switch-ctrl"
               :class="{ on: dpiEnabled[index] }"
@@ -26,7 +26,7 @@
       <div class="col-rate setting-card">
         <div class="card-title">
           <svg viewBox="0 0 24 24"><path d="M13 2v8h8c0-4.42-3.58-8-8-8zm6.32 13.89C20.37 14.54 21 12.84 21 11H6.44l-.95-2H3v2h2.22s.89 4.09 4.66 7.12c1.79 1.46 3.98 2.28 6.22 2.28s4.43-.82 6.22-2.28c.98-.8 1.8-1.79 2.38-2.93z"/></svg>
-          回报率设置
+          {{ $t('settings.pollingRateSettings') }}
         </div>
         <div class="rate-grid">
           <div
@@ -44,7 +44,7 @@
     <div class="sleep-card setting-card">
       <div class="card-title">
         <svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7zm-1-11h2v6h-2z"/></svg>
-        休眠时间设置
+        {{ $t('settings.sleepSettings') }}
       </div>
       <div class="slider-wrap">
         <div class="slider-bar" @mousedown.prevent="startSleepDrag">
@@ -52,11 +52,11 @@
           <div class="slider-thumb" :style="{ left: (sleepLevel / 4 * 100) + '%' }"></div>
         </div>
         <div class="slider-mark">
-          <span>档位1</span>
-          <span>档位2</span>
-          <span>档位3</span>
-          <span>档位4</span>
-          <span>档位5</span>
+          <span>{{ $t('settings.sleepLevel1') }}</span>
+          <span>{{ $t('settings.sleepLevel2') }}</span>
+          <span>{{ $t('settings.sleepLevel3') }}</span>
+          <span>{{ $t('settings.sleepLevel4') }}</span>
+          <span>{{ $t('settings.sleepLevel5') }}</span>
         </div>
       </div>
     </div>
@@ -69,6 +69,9 @@ import { ref, watch, onUnmounted } from 'vue'
 import { useDeviceStore } from '@/stores/modules/device'
 import { useAppStore } from '@/stores/modules/app'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const deviceStore = useDeviceStore()
 const appStore = useAppStore()
@@ -104,10 +107,10 @@ async function saveToDevice(context: string = '') {
   try {
     await deviceStore.protocol.savePerformanceSettings(perfData)
     console.log(`[Settings] 保存性能${context} 成功`)
-    ElMessage.success(`设置保存成功`)
+    ElMessage.success(t('common.saveSuccess'))
   } catch (e) {
     console.error('[Settings] 保存设置失败:', e)
-    ElMessage.error(`设置保存失败: ${(e as Error).message}`)
+    ElMessage.error(t('common.saveFailed') + ': ' + (e as Error).message)
   }
 }
 

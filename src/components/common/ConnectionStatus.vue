@@ -4,7 +4,7 @@
       class="status-pill"
       :class="{ connected: deviceStore.isConnected }"
     >
-      {{ deviceStore.isConnected ? deviceStore.deviceInfo?.productName : '未连接' }}
+      {{ deviceStore.isConnected ? deviceStore.deviceInfo?.productName : $t('connection.disconnected') }}
     </span>
     <button
       v-if="!deviceStore.isConnected"
@@ -12,14 +12,14 @@
       :loading="isConnecting"
       @click="handleConnect"
     >
-      {{ isConnecting ? '连接中...' : '连接设备' }}
+      {{ isConnecting ? $t('connection.connecting') : $t('connection.connect') }}
     </button>
     <button
       v-else
       class="disconnect-btn"
       @click="handleDisconnect"
     >
-      断开
+      {{ $t('connection.disconnect') }}
     </button>
   </div>
 </template>
@@ -32,13 +32,16 @@ import { HIDProtocol } from '@/services/hidProtocol'
 import { useAppStore } from '@/stores/modules/app'
 import { ProfileLayer } from '@/types/keyMapping'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
 const LS_KEY_CONNECTED = 'mouseConfig_connected'
 const LS_KEY_PROFILE = 'mouseConfig_profileId'
-const PROFILE_NAMES = ['默认模式', '办公模式', '游戏模式1', '游戏模式2']
 
 const deviceStore = useDeviceStore()
 const appStore = useAppStore()
+const { t } = useI18n()
+const PROFILE_NAMES = [t('connection.profileNameDefault'), t('connection.profileNameOffice'), t('connection.profileNameGame1'), t('connection.profileNameGame2')]
+
 const protocol = ref<HIDProtocol | null>(null)
 const { requestDevice, disconnect, isConnecting, setInputReportHandler, getReceivedData, getAuthorizedDevice, connectToDevice } = useWebHID()
 
@@ -93,8 +96,8 @@ async function handleConnect() {
       await connectWithDevice(device)
     }
   } catch (error: any) {
-    if (error.message !== '用户未选择设备') {
-      ElMessage.error(error.message || '连接失败')
+    if (error.message !== t('connection.userCancelled')) {
+      ElMessage.error(error.message || t('connection.connectFailed'))
     }
   }
 }
@@ -174,18 +177,18 @@ async function connectWithDevice(device: HIDDevice, showToast = true) {
     localStorage.setItem(LS_KEY_PROFILE, String(appStore.currentProfile))
     
     if (showToast) {
-      ElMessage.success('设备连接成功')
+      ElMessage.success(t('connection.connected'))
     }
   } catch (error: any) {
     console.error('[ConnectionStatus] 设备连接失败:', error)
     
-    let errorMsg = '协议握手失败'
+    let errorMsg = t('connection.handshakeFailed')
     if (error.message.includes('NotAllowedError')) {
-      errorMsg = '设备拒绝访问，请检查设备是否支持此协议'
+      errorMsg = t('connection.accessDenied')
     } else if (error.message.includes('timeout')) {
-      errorMsg = '设备响应超时，请重试'
+      errorMsg = t('connection.timeout')
     } else if (error.message.includes('Failed to write')) {
-      errorMsg = '写入失败，设备可能不支持此 Report ID'
+      errorMsg = t('connection.writeFailed')
     }
     
     ElMessage.error(errorMsg)
@@ -198,7 +201,7 @@ async function handleDisconnect() {
   protocol.value = null
   localStorage.removeItem(LS_KEY_CONNECTED)
   localStorage.removeItem(LS_KEY_PROFILE)
-  ElMessage.info('设备已断开')
+  ElMessage.info(t('connection.disconnectedMsg'))
 }
 </script>
 

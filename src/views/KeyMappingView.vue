@@ -18,7 +18,7 @@
         <div class="mouse-box">
           <MouseVisual @select="handleButtonSelect" />
         </div>
-        <button class="reset-all" @click="handleResetMappings">全部重置按键定义</button>
+        <button class="reset-all" @click="handleResetMappings">{{ $t('mapping.resetAll') }}</button>
       </div>
 
       <!--右侧按键-->
@@ -58,10 +58,12 @@ import { useAppStore } from '@/stores/modules/app'
 import { ProfileLayer, KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
 import { MOUSE_BUTTONS, PROFILE_LAYERS } from '@/utils/constants'
+import { useI18n } from 'vue-i18n'
 
 const keyMappingStore = useKeyMappingStore()
 const deviceStore = useDeviceStore()
 const appStore = useAppStore()
+const { t } = useI18n()
 
 const selectorVisible = ref(false)
 const selectedButton = ref<MouseButton | null>(null)
@@ -85,14 +87,14 @@ const profileLayerToKey: Record<ProfileLayer, ProfileKey> = {
   [ProfileLayer.GAME2]: 'game2',
 }
 
-const defaultButtonLabels: Record<number, string> = {
-  1: '左键',
-  2: '右键',
-  3: '中键',
-  4: '后退键',
-  5: '前进键',
-  6: 'DPI键',
-}
+const defaultButtonLabels = computed<Record<number, string>>(() => ({
+  1: t('mapping.leftButton'),
+  2: t('mapping.rightButton'),
+  3: t('mapping.middleButton'),
+  4: t('mapping.backButton'),
+  5: t('mapping.forwardButton'),
+  6: t('mapping.dpiButton'),
+}))
 
 // 连接后自动获取任意模式的按键定义
 watch(() => deviceStore.isConnected && deviceStore.protocol, async (ready) => {
@@ -136,7 +138,7 @@ async function fetchAndSetMappings() {
         mappings[buttonId] = {
           buttonId,
           type: type as KeyType,
-          target: { keyCode, label: getKeyLabel(keyCode, type) || defaultButtonLabels[buttonId] },
+          target: { keyCode, label: getKeyLabel(keyCode, type) || defaultButtonLabels.value[buttonId] },
           layer: currentLayer,
           enabled: true,
         }
@@ -180,24 +182,24 @@ function getKeyLabel(keyCode: number, type?: number): string {
     return `M${keyCode}`
   }
   if (type !== KeyType.KEY && keyCode >= 1 && keyCode <= 9) {
-    return defaultButtonLabels[keyCode]
+    return defaultButtonLabels.value[keyCode]
   }
   // 鼠标功能键
   const mouseFuncLabels: Record<number, string> = {
-    0xF4: '左键',
-    0xF5: '右键',
-    0xF6: '中键',
-    0xF7: '后退',
-    0xF8: '前进',
-    0xF9: '滚轮上',
-    0xFA: '滚轮下',
-    0xD0: 'DPI切换',
-    0xD1: '回报率',
-    0xD2: '火力键',
-    0xD3: '蓝牙配对',
-    0xD4: '2.4G配对',
-    0xD5: '模式切换',
-    0xD6: '老板键',
+    0xF4: t('mapping.mouseLeft'),
+    0xF5: t('mapping.mouseRight'),
+    0xF6: t('mapping.mouseMiddle'),
+    0xF7: t('mapping.mouseBack'),
+    0xF8: t('mapping.mouseForward'),
+    0xF9: t('mapping.wheelUp'),
+    0xFA: t('mapping.wheelDown'),
+    0xD0: t('mapping.dpiSwitch'),
+    0xD1: t('mapping.pollingRate'),
+    0xD2: t('mapping.fireKey'),
+    0xD3: t('mapping.btPair'),
+    0xD4: t('mapping.wireless24Pair'),
+    0xD5: t('mapping.modeSwitch'),
+    0xD6: t('mapping.bossKey'),
   }
   if (mouseFuncLabels[keyCode]) return mouseFuncLabels[keyCode]
   // 键盘按键
@@ -238,9 +240,9 @@ const hidKeyLabel: Record<number, string> = {
   0x22: '5', 0x23: '6', 0x24: '7', 0x25: '8', 0x26: '9',
   0x27: '0',
 }
-const modifierLabel: Record<number, string> = {
-  0xE0: 'Ctrl', 0xE1: 'Shift', 0xE2: 'Alt', 0xE3: 'Win',
-}
+const modifierLabel = computed<Record<number, string>>(() => ({
+  0xE0: t('keySelector.modCtrl'), 0xE1: t('keySelector.modShift'), 0xE2: t('keySelector.modAlt'), 0xE3: t('keySelector.modWin'),
+}))
 
 // 解析组合快捷键数据，用于显示标签
 // 6字节格式：{count, key1, key2, key3, key4, key5}
@@ -252,7 +254,7 @@ function parseShortcutData(data: Uint8Array): string {
   for (let i = 0; i < count && i < 5; i++) {
     const code = data[1 + i]
     if (code === 0) break
-    const mod = modifierLabel[code]
+    const mod = modifierLabel.value[code]
     if (mod) {
       keys.push(mod)
     } else {
@@ -398,7 +400,7 @@ const comboShortcutData: Record<number, Uint8Array> = {
 // 复位当前Profile的按键定义
 async function handleResetMappings() {
   if (!deviceStore.isConnected || !deviceStore.protocol) {
-    ElMessage.warning('请先连接设备')
+    ElMessage.warning(t('common.connectDevice'))
     return
   }
 
@@ -408,9 +410,9 @@ async function handleResetMappings() {
 
   try {
     await ElMessageBox.confirm(
-      `确定要复位「${profileName}」的按键定义吗？`,
-      '复位确认',
-      { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
+      t('mapping.resetConfirm', { name: profileName }),
+      t('mapping.resetConfirmTitle'),
+      { type: 'warning', confirmButtonText: t('common.confirm'), cancelButtonText: t('common.cancel') }
     )
 
     const data = await deviceStore.protocol.resetKeyMappings(profileLayer)
@@ -428,7 +430,7 @@ async function handleResetMappings() {
       mappings[buttonId] = {
         buttonId,
         type: type as KeyType,
-        target: { keyCode, label: getKeyLabel(keyCode, type) || defaultButtonLabels[buttonId] } as any,
+        target: { keyCode, label: getKeyLabel(keyCode, type) || defaultButtonLabels.value[buttonId] } as any,
         layer: profileLayer as any,
         enabled: true,
       }
@@ -436,13 +438,13 @@ async function handleResetMappings() {
     keyMappingStore.setMappings(profileKey, mappings)
 
     ElMessageBox.alert(
-      `「${profileName}」按键定义已复位成功`,
-      '复位成功',
-      { type: 'success', confirmButtonText: '确定' }
+      t('common.resetSuccess'),
+      t('mapping.resetConfirmTitle'),
+      { type: 'success', confirmButtonText: t('common.confirm') }
     )
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error('复位失败: ' + (e.message || e))
+      ElMessage.error(t('mapping.resetFailed') + ': ' + (e.message || e))
     }
   }
 }

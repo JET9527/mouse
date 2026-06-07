@@ -9,7 +9,7 @@
         :class="{ active: appStore.currentProfile === profile.key }"
         @click="handleProfileChange(profile.key)"
       >
-        {{ profile.label }}
+        {{ $t('bottomBar.' + profileI18nKeys[profile.key]) }}
       </button>
     </div>
 
@@ -17,11 +17,11 @@
     <div class="action-buttons">
       <button class="right-btn-reset" @click="handleReset">
         <el-icon><Refresh /></el-icon>
-        重置
+        {{ $t('bottomBar.reset') }}
       </button>
       <button class="right-btn-factory" @click="handleRestoreFactory">
         <el-icon><WarningFilled /></el-icon>
-        复位
+        {{ $t('bottomBar.factoryReset') }}
       </button>
     </div>
   </div>
@@ -35,11 +35,20 @@ import { useDeviceStore } from '@/stores/modules/device'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, WarningFilled } from '@element-plus/icons-vue'
 import { ProfileLayer } from '@/types/keyMapping'
+import { useI18n } from 'vue-i18n'
 
 const appStore = useAppStore()
 const keyMappingStore = useKeyMappingStore()
 const deviceStore = useDeviceStore()
+const { t } = useI18n()
 const profileLayers = PROFILE_LAYERS
+
+const profileI18nKeys: Record<ProfileLayer, string> = {
+  [ProfileLayer.DEFAULT]: 'defaultProfile',
+  [ProfileLayer.OFFICE]: 'officeProfile',
+  [ProfileLayer.GAME1]: 'gameProfile1',
+  [ProfileLayer.GAME2]: 'gameProfile2',
+}
 
 // ProfileLayer 枚举 → keyMapping store 的 ProfileKey 映射
 const profileLayerToKey: Record<ProfileLayer, string> = {
@@ -58,16 +67,16 @@ async function handleProfileChange(key: ProfileLayer) {
     appStore.setLoading(true)
     try {
       await deviceStore.protocol.setProfileId(key)
-      const profileNames = ['默认模式', '办公模式', '游戏模式1', '游戏模式2']
-      ElMessage.success(`已切换到 ${profileNames[key] || '未知模式'}`)
+      const profileNames = [t('bottomBar.defaultProfile'), t('bottomBar.officeProfile'), t('bottomBar.gameProfile1'), t('bottomBar.gameProfile2')]
+      ElMessage.success(`${t('bottomBar.profileSwitched')} ${profileNames[key] || t('bottomBar.unknownProfile')}`)
       localStorage.setItem('mouseConfig_profileId', String(key))
       console.log('[BottomBar] 切换 Profile:', {
         值: `0x${key.toString(16).padStart(2, '0')}`,
-        名称: ['默认模式', '办公模式', '游戏模式1', '游戏模式2'][key] || '未知'
+        名称: [t('bottomBar.defaultProfile'), t('bottomBar.officeProfile'), t('bottomBar.gameProfile1'), t('bottomBar.gameProfile2')][key] || '未知'
       })
     } catch (error: any) {
       console.error('[BottomBar] 切换 Profile 失败:', error)
-      ElMessage.error('切换模式失败')
+      ElMessage.error(t('bottomBar.switchFailed'))
       const prevKey = appStore.currentProfile
       appStore.setProfile(prevKey)
       keyMappingStore.setProfile(profileLayerToKey[prevKey] as any)
@@ -79,25 +88,25 @@ async function handleProfileChange(key: ProfileLayer) {
 
 async function handleReset() {
   try {
-    await ElMessageBox.confirm('确定要恢复主控出厂设置吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('bottomBar.resetConfirmTitle'), t('common.tips'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     })
     if (!deviceStore.isConnected || !deviceStore.protocol) {
-      ElMessage.warning('请先连接设备')
+      ElMessage.warning(t('common.connectDevice'))
       return
     }
     appStore.setLoading(true)
     try {
       await deviceStore.protocol.restoreFactorySettings()
       console.log('[BottomBar] 恢复出厂设置成功')
-      ElMessage.success('已恢复出厂设置')
+      ElMessage.success(t('bottomBar.alreadyRestored'))
       // 通知所有页面重新获取设备数据
       appStore.triggerFactoryReset()
     } catch (error: any) {
       console.error('[BottomBar] 恢复出厂设置失败:', error)
-      ElMessage.error('恢复出厂设置失败: ' + error.message)
+      ElMessage.error(t('common.resetFailed') + ': ' + error.message)
     } finally {
       appStore.setLoading(false)
     }
@@ -108,23 +117,23 @@ async function handleReset() {
 
 async function handleRestoreFactory() {
   try {
-    await ElMessageBox.confirm('确定要复位MCU按键设置吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('bottomBar.factoryResetConfirmTitle'), t('common.tips'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     })
     if (!deviceStore.isConnected || !deviceStore.protocol) {
-      ElMessage.warning('请先连接设备')
+      ElMessage.warning(t('common.connectDevice'))
       return
     }
     appStore.setLoading(true)
     try {
       const data = await deviceStore.protocol.resetKeyMappings(ProfileLayer.DEFAULT)
       console.log('[BottomBar] 复位成功, 返回数据:', Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '))
-      ElMessage.success('MCU已复位')
+      ElMessage.success(t('bottomBar.mcuRestored'))
     } catch (error: any) {
       console.error('[BottomBar] 复位失败:', error)
-      ElMessage.error('复位失败: ' + error.message)
+      ElMessage.error(t('common.resetFailed') + ': ' + error.message)
     } finally {
       appStore.setLoading(false)
     }

@@ -6,7 +6,7 @@ export const useAppStore = defineStore('app', () => {
   const currentTab = ref('mapping')
   const currentProfile = ref<ProfileLayer>(ProfileLayer.DEFAULT)
   const sidebarCollapsed = ref(false)
-  const language = ref('zh-CN')
+  const language = ref(localStorage.getItem('mouseConfig_language') || 'zh-CN')
   const webhidSupported = ref(true)
   const isLoading = ref(false)
   const factoryResetVersion = ref(0)
@@ -27,6 +27,11 @@ export const useAppStore = defineStore('app', () => {
     webhidSupported.value = supported
   }
 
+  function setLanguage(lang: string) {
+    language.value = lang
+    localStorage.setItem('mouseConfig_language', lang)
+  }
+
   function setLoading(val: boolean) {
     isLoading.value = val
   }
@@ -43,6 +48,7 @@ export const useAppStore = defineStore('app', () => {
     setProfile,
     triggerFactoryReset,
     setWebHIDSupported,
+    setLanguage,
     setLoading,
   }
 })

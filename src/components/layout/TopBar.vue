@@ -25,16 +25,29 @@
         :class="{ active: appStore.currentTab === tab.key }"
         @click="handleTabClick(tab)"
       >
-        {{ tab.label }}
+        {{ $t('navTabs.' + tab.key) }}
       </button>
     </div>
 
     <ConnectionStatus />
 
-    <!-- Language switch -->
-    <div class="lang-switch">
-      <span class="lang-text">{{ appStore.language === 'zh-CN' ? '中文' : 'EN' }}</span>
-    </div>
+    <!-- Language switch dropdown -->
+    <el-dropdown class="lang-dropdown" @command="handleLangChange">
+      <span class="lang-trigger">
+        {{ $t('topbar.' + (appStore.language === 'zh-CN' ? 'chinese' : 'english')) }}
+        <el-icon class="lang-arrow"><ArrowDown /></el-icon>
+      </span>
+      <template #dropdown>
+        <el-dropdown-menu>
+          <el-dropdown-item command="zh-CN" :disabled="appStore.language === 'zh-CN'">
+            <span :class="{ active: appStore.language === 'zh-CN' }">中文</span>
+          </el-dropdown-item>
+          <el-dropdown-item command="en" :disabled="appStore.language === 'en'">
+            <span :class="{ active: appStore.language === 'en' }">English</span>
+          </el-dropdown-item>
+        </el-dropdown-menu>
+      </template>
+    </el-dropdown>
   </div>
 </template>
 
@@ -42,15 +55,23 @@
 import { NAV_TABS } from '@/utils/constants'
 import { useAppStore } from '@/stores/modules/app'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { ArrowDown } from '@element-plus/icons-vue'
 import ConnectionStatus from '../common/ConnectionStatus.vue'
 
 const appStore = useAppStore()
 const router = useRouter()
+const { locale } = useI18n()
 const navTabs = NAV_TABS
 
 function handleTabClick(tab: typeof NAV_TABS[0]) {
   appStore.setTab(tab.key)
   router.push(tab.path)
+}
+
+function handleLangChange(lang: string) {
+  locale.value = lang
+  appStore.setLanguage(lang)
 }
 </script>
 
@@ -119,22 +140,29 @@ function handleTabClick(tab: typeof NAV_TABS[0]) {
   }
 }
 
-.lang-switch {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
+.lang-dropdown {
   margin-left: 14px;
+  cursor: pointer;
+}
+
+.lang-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
   background: #181C29;
   border: 1px solid rgba(0,229,255,0.3);
   border-radius: 4px;
   color: #E6EDF7;
   font-size: 13px;
-  cursor: pointer;
   transition: all 0.3s;
 
   &:hover {
     border-color: #00E5FF;
   }
+}
+
+.lang-arrow {
+  font-size: 12px;
 }
 </style>

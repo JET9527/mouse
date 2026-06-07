@@ -4,7 +4,7 @@
     <div class="light-main-wrap">
       <!-- 左侧预览卡片 -->
       <div class="preview-card">
-        <div class="preview-title">灯光预览</div>
+        <div class="preview-title">{{ $t('lighting.preview') }}</div>
         <div class="mouse-preview-box">
           <svg class="preview-svg" viewBox="0 0 200 300" width="200" height="300">
             <defs>
@@ -36,9 +36,9 @@
         <!-- 灯效模式 -->
         <div class="sub-card">
           <div class="mode-top-row">
-            <span class="mode-title">灯效模式</span>
+            <span class="mode-title">{{ $t('lighting.effectMode') }}</span>
             <div class="switch-wrap">
-              <span>关灯</span>
+              <span>{{ $t('lighting.turnOff') }}</span>
               <div class="switch-btn" :class="{ on: lightOff || config.effect === 6 }" @click="toggleLightOff">
                 <div class="switch-dot"></div>
               </div>
@@ -53,14 +53,14 @@
               @click="handleEffectChange(effect.key)"
             >
               <div class="effect-color-dot" :style="{ background: effect.gradient }"></div>
-              <span>{{ effect.label }}</span>
+              <span>{{ $t('lighting.' + effect.i18nKey) }}</span>
             </div>
           </div>
         </div>
 
         <!-- LED颜色设置 -->
         <div class="sub-card" v-if="showMultiColorPicker">
-          <div class="led-section-label">LED选择</div>
+          <div class="led-section-label">{{ $t('lighting.ledSelect') }}</div>
           <div class="led-checkbox-grid">
             <div
               v-for="i in 8"
@@ -76,7 +76,7 @@
           </div>
 
           <div class="led-color-section">
-            <div class="led-section-label">颜色设置</div>
+            <div class="led-section-label">{{ $t('lighting.colorSetting') }}</div>
             <div class="color-picker-row">
               <div class="color-preview-large" :style="{ background: selectedColorStr }"></div>
               <ColorSliderBar v-model="sliderColor" @release="onColorRelease" />
@@ -86,18 +86,18 @@
 
         <!-- 方向按钮 -->
         <div class="sub-card" v-if="showDirection">
-          <div class="mode-title" style="margin-bottom:16px;">方向</div>
+          <div class="mode-title" style="margin-bottom:16px;">{{ $t('lighting.direction') }}</div>
           <div class="direction-buttons">
             <button
               class="direction-btn"
               :class="{ active: config.direction === FlowDirection.FORWARD }"
               @click="handleDirectionChange(FlowDirection.FORWARD)"
-            >正向</button>
+            >{{ $t('lighting.forward') }}</button>
             <button
               class="direction-btn"
               :class="{ active: config.direction === FlowDirection.BACKWARD }"
               @click="handleDirectionChange(FlowDirection.BACKWARD)"
-            >反向</button>
+            >{{ $t('lighting.backward') }}</button>
           </div>
         </div>
 
@@ -105,7 +105,7 @@
         <div class="sub-card">
           <div class="slider-row">
             <div class="slider-head">
-              <span>亮度</span>
+              <span>{{ $t('lighting.brightness') }}</span>
               <span>{{ brightnessLabel }}</span>
             </div>
             <div class="slider-bar" @mousedown.prevent="(e) => startSliderDrag(e, 'brightness')">
@@ -119,7 +119,7 @@
         <div class="sub-card" v-if="showSpeed">
           <div class="slider-row">
             <div class="slider-head">
-              <span>速度</span>
+              <span>{{ $t('lighting.speed') }}</span>
               <span>{{ speedLabel }}</span>
             </div>
             <div class="slider-bar" @mousedown.prevent="(e) => startSliderDrag(e, 'speed')">
@@ -143,6 +143,9 @@ import { useAppStore } from '@/stores/modules/app'
 import { LightingEffect, ColorPreset, FlowDirection } from '@/types/lighting'
 import type { LightingConfig, RGBColor } from '@/types/lighting'
 import ColorSliderBar from '@/components/common/ColorSliderBar.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const lightingStore = useLightingStore()
 const deviceStore = useDeviceStore()
@@ -200,19 +203,25 @@ watch(() => appStore.factoryResetVersion, async () => {
 })
 
 const effects = [
-  { key: LightingEffect.SOLID, label: '常亮模式', gradient: 'linear-gradient(135deg, #33e8cc, #33e8cc)' },
-  { key: LightingEffect.FLOWING, label: '流水模式', gradient: 'linear-gradient(135deg, #d868d8, #d868d8)' },
-  { key: LightingEffect.DPI_BREATHING, label: 'DPI呼吸', gradient: 'linear-gradient(135deg, #ff9944, #ff9944)' },
-  { key: LightingEffect.CYCLE_BREATHING, label: '循环呼吸', gradient: 'linear-gradient(135deg, #ff6644, #ff6644)' },
-  { key: LightingEffect.GRADIENT, label: '渐变颜色', gradient: 'linear-gradient(45deg, #ff0000, #00ff00, #0000ff)' },
-  { key: LightingEffect.RAINBOW, label: '炫彩色', gradient: 'linear-gradient(45deg, #ff8800, #00ccff, #ff00ff)' },
+  { key: LightingEffect.SOLID, label: '常亮模式', i18nKey: 'effectSolid', gradient: 'linear-gradient(135deg, #33e8cc, #33e8cc)' },
+  { key: LightingEffect.FLOWING, label: '流水模式', i18nKey: 'effectFlowing', gradient: 'linear-gradient(135deg, #d868d8, #d868d8)' },
+  { key: LightingEffect.DPI_BREATHING, label: 'DPI呼吸', i18nKey: 'effectDpiBreathing', gradient: 'linear-gradient(135deg, #ff9944, #ff9944)' },
+  { key: LightingEffect.CYCLE_BREATHING, label: '循环呼吸', i18nKey: 'effectCycleBreathing', gradient: 'linear-gradient(135deg, #ff6644, #ff6644)' },
+  { key: LightingEffect.GRADIENT, label: '渐变颜色', i18nKey: 'effectGradient', gradient: 'linear-gradient(45deg, #ff0000, #00ff00, #0000ff)' },
+  { key: LightingEffect.RAINBOW, label: '炫彩色', i18nKey: 'effectRainbow', gradient: 'linear-gradient(45deg, #ff8800, #00ccff, #ff00ff)' },
 ]
 
-const BRIGHTNESS_LABELS = ['关', '微亮', '低', '中', '高', '最亮']
-const SPEED_LABELS = ['停止', '1', '2', '3', '4', '5', '6', '7', '8', '最快']
+const BRIGHTNESS_LABEL_KEYS = ['brightnessOff', 'brightnessDim', 'brightnessLow', 'brightnessMedium', 'brightnessHigh', 'brightnessMax']
+const SPEED_LABEL_KEYS = ['speedStop', '1', '2', '3', '4', '5', '6', '7', '8', 'speedFastest']
 
-const brightnessLabel = computed(() => BRIGHTNESS_LABELS[config.value.brightness] || `${config.value.brightness}`)
-const speedLabel = computed(() => SPEED_LABELS[config.value.speed] || `${config.value.speed}`)
+const brightnessLabel = computed(() => t('lighting.' + BRIGHTNESS_LABEL_KEYS[config.value.brightness]) || `${config.value.brightness}`)
+const speedLabel = computed(() => {
+  const key = SPEED_LABEL_KEYS[config.value.speed]
+  if (key.startsWith('speed')) {
+    return t('lighting.' + key)
+  }
+  return key
+})
 
 const lightOff = ref(false)
 

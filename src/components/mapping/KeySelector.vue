@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="选择按键功能"
+    :title="$t('keySelector.dialogTitle')"
     width="720px"
     :close-on-click-modal="false"
     class="key-selector-dialog"
@@ -9,14 +9,14 @@
     <div class="key-selector">
       <!-- Current button info -->
       <div class="current-info">
-        <span class="info-label">当前按键：</span>
+        <span class="info-label">{{ $t('keySelector.currentButton') }}</span>
         <span class="info-value">{{ currentButton?.label }}</span>
       </div>
 
       <!-- Key type tabs -->
       <el-tabs v-model="activeType" class="type-tabs">
         <!-- Mouse function keys -->
-        <el-tab-pane label="鼠标功能" name="mouseFunc">
+        <el-tab-pane :label="$t('keySelector.tabMouseFunc')" name="mouseFunc">
           <div class="key-grid">
             <button
               v-for="key in mouseFuncKeys"
@@ -31,12 +31,12 @@
         </el-tab-pane>
 
         <!-- Extended keys (国际键值码) -->
-        <el-tab-pane label="按键定义" name="keyDef">
+        <el-tab-pane :label="$t('keySelector.tabKeyDef')" name="keyDef">
           <KeyCodeSelector @select="handleKeyDefSelect" ref="keyDefSelectorRef" />
         </el-tab-pane>
 
         <!-- Macro keys -->
-        <el-tab-pane label="宏录制" name="macro">
+        <el-tab-pane :label="$t('keySelector.tabMacro')" name="macro">
           <div class="key-grid" v-if="macroKeysWithData.length > 0">
             <button
               v-for="key in macroKeysWithData"
@@ -48,33 +48,33 @@
               {{ key.label }}
             </button>
           </div>
-          <div v-else class="empty-hint">暂无录制数据</div>
+          <div v-else class="empty-hint">{{ $t('keySelector.noMacroData') }}</div>
         </el-tab-pane>
 
         <!-- Combo keys -->
-        <el-tab-pane label="组合键" name="combo">
+        <el-tab-pane :label="$t('keySelector.tabCombo')" name="combo">
           <div class="combo-layout">
             <!-- Left: key selector + combo preview -->
             <div class="combo-left">
               <div class="combo-preview-area">
-                <div class="section-label">组合键</div>
+                <div class="section-label">{{ $t('keySelector.comboLabel') }}</div>
                 <div class="combo-result" :class="{ 'has-combo': !!selectedComboKey }">
                   <template v-if="selectedComboKey">
                     <span class="combo-text">{{ comboLabel }}</span>
-                    <button class="combo-remove-btn" @click="clearComboKey" title="删除按键">×</button>
+                    <button class="combo-remove-btn" @click="clearComboKey" :title="$t('keySelector.deleteKey')">×</button>
                   </template>
-                  <span v-else class="combo-placeholder">请选择 MODIFIER 和按键</span>
+                  <span v-else class="combo-placeholder">{{ $t('keySelector.comboPlaceholder') }}</span>
                 </div>
               </div>
               <div class="key-select-area">
-                <div class="section-label">选择按键</div>
+                <div class="section-label">{{ $t('keySelector.selectKey') }}</div>
                 <KeyCodeSelector @select="handleComboKeySelect" ref="comboKeySelectorRef" :hide-modifiers="true" />
               </div>
             </div>
 
             <!-- Right: modifier checkboxes -->
             <div class="combo-right">
-              <div class="section-label">MODIFIER 键</div>
+              <div class="section-label">{{ $t('keySelector.modifierLabel') }}</div>
               <div class="modifier-list">
                 <label
                   v-for="mod in modifierOptions"
@@ -94,15 +94,15 @@
 
       <!-- Selected key preview (按键定义tab使用KeyCodeSelector自带的预览) -->
       <div class="selected-preview" v-if="selectedKey && activeType !== 'keyDef' && activeType !== 'combo'">
-        <span class="preview-label">已选择：</span>
+        <span class="preview-label">{{ $t('keySelector.selected') }}</span>
         <span class="preview-value">{{ selectedKey.label }}</span>
       </div>
     </div>
 
     <template #footer>
-      <button class="gaming-btn" @click="handleCancel">取消</button>
+      <button class="gaming-btn" @click="handleCancel">{{ $t('keySelector.cancel') }}</button>
       <button class="gaming-btn btn-success" @click="handleConfirm" :disabled="!canConfirm">
-        确认
+        {{ $t('keySelector.confirm') }}
       </button>
     </template>
   </el-dialog>
@@ -110,11 +110,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { KeyType } from '@/types/keyMapping'
 import type { MouseButton } from '@/types/keyMapping'
 import { useDeviceStore } from '@/stores/modules/device'
 import { parseMacroData } from '@/utils/macroProtocol'
 import KeyCodeSelector from './KeyCodeSelector.vue'
+
+const { t } = useI18n()
 
 interface KeyOption {
   code: number
@@ -153,22 +156,22 @@ const selectedModifiers = ref<number[]>([])
 const selectedComboKey = ref<{ code: number; label: string } | null>(null)
 const comboKeySelectorRef = ref<InstanceType<typeof KeyCodeSelector> | null>(null)
 
-const modifierOptions = [
-  { code: 0xE0, label: 'CTRL' },
-  { code: 0xE1, label: 'SHIFT' },
-  { code: 0xE2, label: 'ALT' },
-  { code: 0xE3, label: 'WIN' },
-]
+const modifierOptions = computed(() => [
+  { code: 0xE0, label: t('keySelector.modifierCtrl') },
+  { code: 0xE1, label: t('keySelector.modifierShift') },
+  { code: 0xE2, label: t('keySelector.modifierAlt') },
+  { code: 0xE3, label: t('keySelector.modifierWin') },
+])
 
-const MODIFIER_CODE_MAP: Record<number, string> = {
-  0xE0: 'Ctrl',
-  0xE1: 'Shift',
-  0xE2: 'Alt',
-  0xE3: 'Win',
-}
+const MODIFIER_CODE_MAP = computed<Record<number, string>>(() => ({
+  0xE0: t('keySelector.modCtrl'),
+  0xE1: t('keySelector.modShift'),
+  0xE2: t('keySelector.modAlt'),
+  0xE3: t('keySelector.modWin'),
+}))
 
 const comboLabel = computed(() => {
-  const mods = selectedModifiers.value.map(c => MODIFIER_CODE_MAP[c]).filter(Boolean)
+  const mods = selectedModifiers.value.map(c => MODIFIER_CODE_MAP.value[c]).filter(Boolean)
   const key = selectedComboKey.value?.label
   if (mods.length === 0 && !key) return ''
   return [...mods, key].filter(Boolean).join('+')
@@ -255,22 +258,22 @@ const macroKeys: KeyOption[] = Array.from({ length: 15 }, (_, i) => ({
 // 移除旧的 comboKeys 预设列表
 
 // 鼠标功能键 (协议 0x03)
-const mouseFuncKeys: KeyOption[] = [
-  { code: 0xF4, label: '左键', type: KeyType.MOUSE_FUNC },
-  { code: 0xF5, label: '右键', type: KeyType.MOUSE_FUNC },
-  { code: 0xF6, label: '中键', type: KeyType.MOUSE_FUNC },
-  { code: 0xF7, label: '后退', type: KeyType.MOUSE_FUNC },
-  { code: 0xF8, label: '前进', type: KeyType.MOUSE_FUNC },
-  { code: 0xF9, label: '滚轮上', type: KeyType.MOUSE_FUNC },
-  { code: 0xFA, label: '滚轮下', type: KeyType.MOUSE_FUNC },
-  { code: 0xD0, label: 'DPI切换', type: KeyType.MOUSE_FUNC },
-  { code: 0xD1, label: '回报率', type: KeyType.MOUSE_FUNC },
-  { code: 0xD2, label: '火力键', type: KeyType.MOUSE_FUNC },
-  { code: 0xD3, label: 'BT配对', type: KeyType.MOUSE_FUNC },
-  { code: 0xD4, label: '2.4G配对', type: KeyType.MOUSE_FUNC },
-  { code: 0xD5, label: '模式切换', type: KeyType.MOUSE_FUNC },
-  { code: 0xD6, label: '老板键', type: KeyType.MOUSE_FUNC },
-]
+const mouseFuncKeys = computed<KeyOption[]>(() => [
+  { code: 0xF4, label: t('mapping.mouseLeft'), type: KeyType.MOUSE_FUNC },
+  { code: 0xF5, label: t('mapping.mouseRight'), type: KeyType.MOUSE_FUNC },
+  { code: 0xF6, label: t('mapping.mouseMiddle'), type: KeyType.MOUSE_FUNC },
+  { code: 0xF7, label: t('mapping.mouseBack'), type: KeyType.MOUSE_FUNC },
+  { code: 0xF8, label: t('mapping.mouseForward'), type: KeyType.MOUSE_FUNC },
+  { code: 0xF9, label: t('mapping.wheelUp'), type: KeyType.MOUSE_FUNC },
+  { code: 0xFA, label: t('mapping.wheelDown'), type: KeyType.MOUSE_FUNC },
+  { code: 0xD0, label: t('mapping.dpiSwitch'), type: KeyType.MOUSE_FUNC },
+  { code: 0xD1, label: t('mapping.pollingRate'), type: KeyType.MOUSE_FUNC },
+  { code: 0xD2, label: t('mapping.fireKey'), type: KeyType.MOUSE_FUNC },
+  { code: 0xD3, label: t('mapping.btPairShort'), type: KeyType.MOUSE_FUNC },
+  { code: 0xD4, label: t('mapping.wireless24Pair'), type: KeyType.MOUSE_FUNC },
+  { code: 0xD5, label: t('mapping.modeSwitch'), type: KeyType.MOUSE_FUNC },
+  { code: 0xD6, label: t('mapping.bossKey'), type: KeyType.MOUSE_FUNC },
+])
 
 function selectKey(key: KeyOption) {
   selectedKey.value = key

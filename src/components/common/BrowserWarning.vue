@@ -1,12 +1,12 @@
 <template>
   <div class="browser-warning">
     <el-alert
-      title="浏览器兼容性提示"
+      :title="$t('browserWarning.title')"
       type="warning"
       :closable="false"
       show-icon
     >
-      <p>您的浏览器不支持 WebHID API。请使用 Chrome 89+ 或 Edge 89+ 浏览器以获得完整功能。</p>
+      <p>{{ $t('browserWarning.message') }}</p>
     </el-alert>
   </div>
 </template>

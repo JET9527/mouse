@@ -8,6 +8,9 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
+// i18n
+import i18n from './i18n'
+
 // Styles
 import './assets/styles/global.scss'
 import './assets/styles/dark-theme.scss'
@@ -22,7 +25,8 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
-// Register router and pinia
+// Register i18n, router and pinia
+app.use(i18n)
 app.use(router)
 app.use(pinia)
 
