@@ -357,7 +357,7 @@ async function handleKeyConfirm(key: any) {
           const comboData = key.comboData || comboShortcutData[key.code]
           if (comboData) {
             console.log(`[KeyMapping] 保存组合快捷键 按键${btnId}(${key.label}) data:`, 
-              Array.from(comboData).map(b => b.toString(16).padStart(2, '0')).join(' '))
+              Array.from(comboData as Uint8Array).map(b => b.toString(16).padStart(2, '0')).join(' '))
             await deviceStore.protocol.saveShortcutKey(profileLayer, keyIndex, comboData)
             console.log(`[KeyMapping] 组合快捷键保存成功: ${key.label}`)
           }

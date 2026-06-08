@@ -24,8 +24,8 @@ export class ConfigFileService {
    */
   exportConfig(data: ExportConfig, fileName?: string): void {
     const configFile: ExportConfig = {
-      version: CONFIG_VERSION,
       ...data,
+      version: CONFIG_VERSION,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     }
