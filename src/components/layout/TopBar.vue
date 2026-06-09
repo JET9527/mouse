@@ -29,10 +29,10 @@
       </button>
     </div>
 
-    <ConnectionStatus />
-
-    <!-- Language switch dropdown -->
-    <el-dropdown class="lang-dropdown" @command="handleLangChange">
+    <!-- Right section (connection + language) -->
+    <div class="right-section">
+      <ConnectionStatus />
+      <el-dropdown class="lang-dropdown" @command="handleLangChange">
       <span class="lang-trigger">
         {{ $t('topbar.' + (appStore.language === 'zh-CN' ? 'chinese' : 'english')) }}
         <el-icon class="lang-arrow"><ArrowDown /></el-icon>
@@ -48,6 +48,7 @@
         </el-dropdown-menu>
       </template>
     </el-dropdown>
+    </div>
   </div>
 </template>
 
@@ -86,6 +87,7 @@ function handleLangChange(lang: string) {
   height: 56px;
   background: transparent;
   margin-top: 20px;
+  position: relative;
 }
 
 .logo-section {
@@ -110,11 +112,12 @@ function handleLangChange(lang: string) {
 }
 
 .nav-tabs {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1;
-  justify-content: center;
 }
 
 .nav-tab {
@@ -140,8 +143,13 @@ function handleLangChange(lang: string) {
   }
 }
 
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .lang-dropdown {
-  margin-left: 14px;
   cursor: pointer;
 }
 
