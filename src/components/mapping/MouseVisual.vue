@@ -23,8 +23,8 @@
         <!--左侧两个侧键凹槽-->
         <rect x="32" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
         <rect x="32" y="164" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
-        <!--右侧侧键凹槽-->
-        <rect x="156" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+        <!--滚轮下方按键凹槽-->
+        <rect x="94" y="114" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
         <!--尾部电竞纹理线条-->
         <path d="M65,220 L135,220" stroke="#00E5FF66" stroke-width="1"/>
         <path d="M70,235 L130,235" stroke="#00E5FF66" stroke-width="1"/>
@@ -105,8 +105,8 @@ defineEmits<{
 
 .dot1 { top: 32px; left: 18px; }
 .dot2 { top: 32px; right: 18px; }
-.dot3 { top: 86px; left: 50%; transform: translateX(-50%); }
+.dot3 { top: 78px; left: 50%; transform: translateX(-50%); }
 .dot4 { top: 126px; left: 4px; }
 .dot5 { top: 168px; left: 4px; }
-.dot6 { top: 126px; right: 4px; }
+.dot6 { top: 118px; left: 50%; transform: translateX(-50%); }
 </style>

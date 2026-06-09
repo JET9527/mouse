@@ -245,11 +245,12 @@ export default {
     pollingRateSettings: '回报率设置',
     sleepSettings: '休眠时间设置',
     gear: '档位',
-    sleepLevel1: '档位1',
-    sleepLevel2: '档位2',
-    sleepLevel3: '档位3',
-    sleepLevel4: '档位4',
-    sleepLevel5: '档位5',
+    sleepLevel0: '20秒',
+    sleepLevel1: '1分钟',
+    sleepLevel2: '2分钟',
+    sleepLevel3: '5分钟',
+    sleepLevel4: '10分钟',
+    sleepLevel5: '60分钟',
   },
 
   // 常量中的导航和配置标签

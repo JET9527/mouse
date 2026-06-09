@@ -228,11 +228,12 @@ export default {
     pollingRateSettings: 'Polling Rate',
     sleepSettings: 'Sleep Timer',
     gear: 'Level',
-    sleepLevel1: 'Level 1',
-    sleepLevel2: 'Level 2',
-    sleepLevel3: 'Level 3',
-    sleepLevel4: 'Level 4',
-    sleepLevel5: 'Level 5',
+    sleepLevel0: '20S',
+    sleepLevel1: '1min',
+    sleepLevel2: '2min',
+    sleepLevel3: '5min',
+    sleepLevel4: '10min',
+    sleepLevel5: '60min',
   },
 
   navTabs: {

@@ -48,15 +48,13 @@
       </div>
       <div class="slider-wrap">
         <div class="slider-bar" @mousedown.prevent="startSleepDrag">
-          <div class="slider-fill" :style="{ width: (sleepLevel / 4 * 100) + '%' }"></div>
-          <div class="slider-thumb" :style="{ left: (sleepLevel / 4 * 100) + '%' }"></div>
+          <div class="slider-fill" :style="{ width: (sleepLevel / 5 * 100) + '%' }"></div>
+          <div class="slider-thumb" :style="{ left: (sleepLevel / 5 * 100) + '%' }"></div>
         </div>
         <div class="slider-mark">
-          <span>{{ $t('settings.sleepLevel1') }}</span>
-          <span>{{ $t('settings.sleepLevel2') }}</span>
-          <span>{{ $t('settings.sleepLevel3') }}</span>
-          <span>{{ $t('settings.sleepLevel4') }}</span>
-          <span>{{ $t('settings.sleepLevel5') }}</span>
+          <span v-for="i in 6" :key="i">
+            {{ $t('settings.sleepLevel' + (i - 1)) }}
+          </span>
         </div>
       </div>
     </div>
@@ -84,7 +82,7 @@ const dpiEnabled = ref([true, false, false, false, false, false])
 const pollingRateOptions = [125, 250, 500, 1000, 2000, 4000, 8000]
 const pollingRate = ref(1000)
 
-// 休眠时间 5档（对应协议0x00~0x04）
+// 休眠时间 6档（对应协议0x00~0x05）：20S,1min,2min,5min,10min,60min
 const sleepLevel = ref(0)
 
 // 保存设备原始性能参数（指针速度、滚轮速度、火力键时间等保留原值）
@@ -145,7 +143,7 @@ async function fetchSettings() {
       pollingRate.value = pollingRateOptions[rateIdx]
     }
 
-    sleepLevel.value = sleepIdx >= 0 && sleepIdx <= 4 ? sleepIdx : 0
+    sleepLevel.value = sleepIdx >= 0 && sleepIdx <= 5 ? sleepIdx : 0
   } catch (e) {
     console.error('[Settings] 获取设置失败:', e)
   }
@@ -205,7 +203,7 @@ function updateSleepFromEvent(e: MouseEvent) {
   if (!sleepBarEl) return
   const rect = sleepBarEl.getBoundingClientRect()
   const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-  const val = Math.round(pct * 4)
+  const val = Math.round(pct * 5)
   if (val !== sleepLevel.value) {
     sleepLevel.value = val
   }

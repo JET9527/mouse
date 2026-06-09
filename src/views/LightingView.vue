@@ -23,7 +23,7 @@
             <ellipse cx="100" cy="82" rx="18" ry="12" fill="#0c1018" stroke="url(#mouseLine)" stroke-width="2"/>
             <rect x="32" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
             <rect x="32" y="164" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
-            <rect x="156" y="122" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
+            <rect x="94" y="114" width="12" height="32" rx="3" fill="#121824" stroke="#00E5FF" stroke-width="1"/>
             <path d="M65,220 L135,220" stroke="#00E5FF66" stroke-width="1"/>
             <path d="M70,235 L130,235" stroke="#00E5FF66" stroke-width="1"/>
 
@@ -63,14 +63,14 @@
           <div class="led-section-label">{{ $t('lighting.ledSelect') }}</div>
           <div class="led-checkbox-grid">
             <div
-              v-for="i in 8"
+              v-for="i in ledCount"
               :key="'ledck' + i"
               class="led-checkbox-item"
               :class="{ selected: selectedLeds.has(i - 1) }"
               @click="toggleLed(i - 1, $event)"
             >
               <div class="led-check-dot" :style="{ background: rgbStr(config.colors[i - 1]) }"></div>
-              <span class="led-check-label">LED{{ i }}</span>
+              <span class="led-check-label">{{ ledLabel(i) }}</span>
               <div class="led-check-mark" v-if="selectedLeds.has(i - 1)">✓</div>
             </div>
           </div>
@@ -330,6 +330,22 @@ const showMultiColorPicker = computed(() => {
     config.value.effect === LightingEffect.FLOWING ||
     config.value.effect === LightingEffect.CYCLE_BREATHING
 })
+
+// 常亮模式只展示LED1-LED6，流水/循环呼吸展示8个
+const ledCount = computed(() => {
+  if (config.value.effect === LightingEffect.SOLID) {
+    return 6
+  }
+  return 8
+})
+
+// 常亮模式标签为LED，流水/循环呼吸标签为Color
+function ledLabel(i: number): string {
+  if (config.value.effect === LightingEffect.SOLID) {
+    return `LED${i}`
+  }
+  return `Color${i}`
+}
 
 const showDirection = computed(() => {
   return config.value.effect === LightingEffect.FLOWING
