@@ -43,8 +43,8 @@ export const useKeyMappingStore = defineStore('keyMapping', () => {
       1: '左键',
       2: '右键',
       3: '中键',
-      4: '后退键',
-      5: '前进键',
+      4: '前进键',
+      5: '后退键',
       6: 'DPI键',
     }
     for (let i = 1; i <= 6; i++) {

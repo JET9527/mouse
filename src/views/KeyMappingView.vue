@@ -91,8 +91,8 @@ const defaultButtonLabels = computed<Record<number, string>>(() => ({
   1: t('mapping.leftButton'),
   2: t('mapping.rightButton'),
   3: t('mapping.middleButton'),
-  4: t('mapping.backButton'),
-  5: t('mapping.forwardButton'),
+  4: t('mapping.forwardButton'),
+  5: t('mapping.backButton'),
   6: t('mapping.dpiButton'),
 }))
 

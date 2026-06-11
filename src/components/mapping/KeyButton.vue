@@ -24,8 +24,8 @@ const BUTTON_I18N_KEYS: Record<number, string> = {
   1: 'mapping.leftButton',
   2: 'mapping.rightButton',
   3: 'mapping.middleButton',
-  4: 'mapping.backButton',
-  5: 'mapping.forwardButton',
+  4: 'mapping.forwardButton',
+  5: 'mapping.backButton',
   6: 'mapping.dpiButton',
 }
 

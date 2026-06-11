@@ -219,7 +219,7 @@ export default {
     brightnessMedium: 'Mid',
     brightnessHigh: 'High',
     brightnessMax: 'Max',
-    speedStop: 'Stop',
+    speedStop: 'Slowest',
     speedFastest: 'Fastest',
   },
 

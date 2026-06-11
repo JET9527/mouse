@@ -9,8 +9,8 @@ export const MOUSE_BUTTONS: MouseButton[] = [
   { id: 1, label: '左键', side: 'left' },
   { id: 2, label: '右键', side: 'right' },
   { id: 3, label: '中键', side: 'right' },
-  { id: 4, label: '后退键', side: 'left' },
-  { id: 5, label: '前进键', side: 'left' },
+  { id: 4, label: '前进键', side: 'left' },
+  { id: 5, label: '后退键', side: 'left' },
   { id: 6, label: 'DPI键', side: 'right' },
 ]
 

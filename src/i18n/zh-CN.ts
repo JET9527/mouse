@@ -235,7 +235,7 @@ export default {
     brightnessMedium: '中',
     brightnessHigh: '高',
     brightnessMax: '最亮',
-    speedStop: '停止',
+    speedStop: '最慢',
     speedFastest: '最快',
   },
 
