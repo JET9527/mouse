@@ -78,8 +78,8 @@ const appStore = useAppStore()
 const dpiValues = [800, 1600, 3200, 4800, 9600, 20000]
 const dpiEnabled = ref([true, false, false, false, false, false])
 
-// 回报率 7档（对应协议0x00~0x06）
-const pollingRateOptions = [125, 250, 500, 1000, 2000, 4000, 8000]
+// 回报率 4档（对应协议0x00~0x03）：1000Hz,2000Hz,4000Hz,8000Hz
+const pollingRateOptions = [1000, 2000, 4000, 8000]
 const pollingRate = ref(1000)
 
 // 休眠时间 6档（对应协议0x00~0x05）：20S,1min,2min,5min,10min,60min

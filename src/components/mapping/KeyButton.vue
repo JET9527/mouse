@@ -67,6 +67,10 @@ const displayLabel = computed(() => {
 
   // MOUSE_FUNC 类型：根据 keyCode 动态翻译
   if (props.mapping.type === KeyType.MOUSE_FUNC) {
+    // keyCode 为 0 表示未定义功能，显示按键本身名称
+    if (target?.keyCode === 0) {
+      return t(BUTTON_I18N_KEYS[props.button.id] || 'mapping.leftButton')
+    }
     const i18nKey = MOUSE_FUNC_I18N_KEYS[target?.keyCode]
     if (i18nKey) return t(i18nKey)
     return label || t('keyButton.mouseFunc')
