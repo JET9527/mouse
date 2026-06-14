@@ -10,7 +10,7 @@
       <!-- Current button info -->
       <div class="current-info">
         <span class="info-label">{{ $t('keySelector.currentButton') }}</span>
-        <span class="info-value">{{ currentButton?.label }}</span>
+        <span class="info-value">{{ currentButtonLabel }}</span>
       </div>
 
       <!-- Key type tabs -->
@@ -143,6 +143,21 @@ const emit = defineEmits<{
   confirm: [key: KeyOption]
   'tab-change': [tab: string]
 }>()
+
+const BUTTON_I18N_KEYS: Record<number, string> = {
+  1: 'mapping.leftButton',
+  2: 'mapping.rightButton',
+  3: 'mapping.middleButton',
+  4: 'mapping.forwardButton',
+  5: 'mapping.backButton',
+  6: 'mapping.dpiButton',
+}
+
+const currentButtonLabel = computed(() => {
+  if (!props.currentButton) return ''
+  const i18nKey = BUTTON_I18N_KEYS[props.currentButton.id]
+  return i18nKey ? t(i18nKey) : props.currentButton.label
+})
 
 const deviceStore = useDeviceStore()
 const visible = ref(props.modelValue)

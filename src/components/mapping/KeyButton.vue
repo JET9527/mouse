@@ -88,6 +88,11 @@ const displayDesc = computed(() => {
   const label = target?.label || ''
   switch (props.mapping.type) {
     case KeyType.MOUSE_FUNC: {
+      // keyCode 为 0 表示未定义功能，显示按键本身的描述
+      if (target?.keyCode === 0) {
+        const btnLabel = t(BUTTON_I18N_KEYS[props.button.id] || 'mapping.leftButton')
+        return t('keyButton.descMouse', { label: btnLabel })
+      }
       const i18nKey = MOUSE_FUNC_I18N_KEYS[target?.keyCode]
       const translatedLabel = i18nKey ? t(i18nKey) : label
       return t('keyButton.descMouse', { label: translatedLabel })

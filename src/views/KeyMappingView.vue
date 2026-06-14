@@ -226,6 +226,8 @@ function getKeyLabel(keyCode: number, type?: number): string {
     }
     if (keyLabels[keyCode]) return keyLabels[keyCode]
   }
+  // 未知键码，显示十六进制
+  if (keyCode === 0) return ''
   return `0x${keyCode.toString(16).padStart(2, '0')}`
 }
 
